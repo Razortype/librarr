@@ -1,0 +1,15 @@
+node_modules/
+.next/
+__pycache__/
+.venv/
+venv/
+*.db
+*.sqlite
+data/
+logs/
+.git/
+dist/
+build/
+coverage/
+.next/
+out/
