@@ -5,10 +5,10 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import JSON, UUID, DateTime, Enum, ForeignKey, String, func
-from sqlalchemy.orm import Mapped, column_property, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.associations import book_authors_table
-from app.models.base import Base, uuid7_pk
+from app.models.base import Base, ConfidenceMixin, uuid7_pk
 
 if TYPE_CHECKING:
     from app.models.author import Author
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from app.models.series import Series
 
 
-class Book(Base):
+class Book(ConfidenceMixin, Base):
     __tablename__ = "books"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid7_pk)
@@ -44,8 +44,6 @@ class Book(Base):
         default="wanted",
         nullable=False,
     )
-    system_confidence: Mapped[float] = mapped_column(default=0.0)
-    user_confidence: Mapped[float | None] = mapped_column(nullable=True, default=None)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -67,8 +65,3 @@ class Book(Base):
 
     def __repr__(self) -> str:
         return f"<Book id={self.id} title={self.title!r}>"
-
-
-Book.effective_confidence = column_property(  # type: ignore[attr-defined]
-    func.coalesce(Book.user_confidence, Book.system_confidence)
-)
