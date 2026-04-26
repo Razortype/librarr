@@ -148,6 +148,12 @@ One logical change per commit. Don't combine refactor and feature.
 - All user input parameterized via SQLAlchemy. **No** raw SQL with string interpolation.
 - CORS locked down by default. User configures allowed origins.
 
+## Commit conventions
+
+- **No `Co-Authored-By: Claude` trailers.** Author is the user only. AI assistance is acknowledged in README; commits stay clean.
+- **No `git -C <path>` flags.** Run git from the working directory.
+- **Propose before committing.** Before executing any commit, surface the proposed message in chat and wait for explicit user approval. This applies to delegated subagent commits too — subagents stage files, surface the message, the user approves, then commit.
+
 ## What NOT to do
 
 - **Do not** import from `librarr-cloud`. Cloud is an external HTTP service.
