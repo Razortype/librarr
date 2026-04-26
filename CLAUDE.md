@@ -23,6 +23,16 @@ A separate **private** repo `librarr-web` contains the marketing site. Not relev
 - **Linting:** ruff (Python), prettier + eslint (TS)
 - **Package mgmt:** uv for Python, pnpm for Node
 
+## Tooling commands
+
+- Python commands run via `uv run`, never raw `python` or `.venv/bin/python` paths. Examples:
+  - `uv run python -c "..."` for one-liners
+  - `uv run pytest` for tests
+  - `uv run alembic upgrade head` for migrations
+  - `uv run ruff check` for linting
+- Package additions via `uv add <pkg>` (runtime) or `uv add --dev <pkg>` (dev), never edit pyproject.toml manually.
+- Lock file (`uv.lock`) is committed and authoritative. Don't run `uv sync --refresh` casually.
+
 ## Architecture overview
 
 Three-layer architecture:
