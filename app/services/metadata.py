@@ -189,6 +189,15 @@ class MetadataService:
 
             if status.status == "complete":
                 return status.result
+            if status.status == "failed":
+                logger.info(
+                    "metadata_ol_fallback",
+                    reason="cloud_poll_failed",
+                    request_id=request_id,
+                    query=query,
+                    entity_type=entity_type,
+                )
+                return None
 
         # Polling budget exhausted
         logger.info(
