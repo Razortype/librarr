@@ -29,6 +29,14 @@ librarr has two parts:
 
 Default install uses the public cloud. Power users can BYO LLM key, run their own cloud, or skip cloud entirely (degraded metadata).
 
+## Prerequisites
+
+- **Python 3.13+** with [uv](https://docs.astral.sh/uv/) — `curl -LsSf https://astral.sh/uv/install.sh | sh`
+- **Overmind** (local dev process manager)
+  - macOS: `brew install overmind`
+  - Linux: see [overmind releases](https://github.com/DarthSim/overmind/releases)
+- **PostgreSQL and Redis** running natively (e.g. `brew services start postgresql && brew services start redis`)
+
 ## Quick start
 
 Coming soon. Watch the repo or check [ROADMAP.md](./ROADMAP.md) for milestones.
