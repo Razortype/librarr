@@ -7,6 +7,8 @@ from pydantic import BaseModel
 
 router = APIRouter()
 
+_VERSION = importlib.metadata.version("librarr")
+
 
 class StatusResponse(BaseModel):
     status: str
@@ -15,5 +17,4 @@ class StatusResponse(BaseModel):
 
 @router.get("/status", response_model=StatusResponse)
 async def get_status() -> StatusResponse:
-    version = importlib.metadata.version("librarr")
-    return StatusResponse(status="ok", version=version)
+    return StatusResponse(status="ok", version=_VERSION)
