@@ -35,7 +35,11 @@ Default install uses the public cloud. Power users can BYO LLM key, run their ow
 - **Overmind** (local dev process manager)
   - macOS: `brew install overmind`
   - Linux: see [overmind releases](https://github.com/DarthSim/overmind/releases)
-- **PostgreSQL and Redis** running natively (e.g. `brew services start postgresql && brew services start redis`)
+- **PostgreSQL** running natively (e.g. `brew services start postgresql@16`)
+  - Default: `DATABASE_URL=postgresql+asyncpg://librarr:librarr@localhost:5432/librarr`
+  - Create DB: `createdb librarr && createuser librarr`
+- **Redis** running natively (e.g. `brew services start redis`)
+  - Default: `REDIS_URL=redis://localhost:6379/0`
 
 ## Quick start
 
