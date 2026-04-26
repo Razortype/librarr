@@ -11,6 +11,12 @@ Intentional technical debts and deferred work. Each item must be resolved before
 - **`QualityProfile.formats` vs `QualityObject` reconciliation** — `formats` is an untyped JSON list; `QualityObject` in `app/schemas/quality.py` defines the intended shape. Wire validation through `QualityObject` at the API boundary when the quality profile endpoint is built.
 - **`make_cache_key` empty-string guard** (`app/core/cache_keys.py`) — current guard uses `not source` which is falsy for empty string but passes `"0"`. Tighten to explicit `source == ""` check before the cache write layer is in use.
 
+## Infrastructure / performance
+
+- **Circuit breaker (aiobreaker)** — tenacity-only is sufficient for A. Introduce a real circuit breaker when concurrent metadata enrichment lands (multiple simultaneous search requests) — at that scale, repeated failures against OL/cloud cascade. Add before the concurrent enrichment Arq task ships.
+- **Move cloud polling to Arq task** — the metadata service currently drives the cloud poll loop synchronously. This blocks a worker for up to 30s under slow cloud responses. Move to an Arq background task before concurrent search is exposed via API endpoints.
+- **OL startup health check** — ping `GET /api/` on OL client startup (via FastAPI lifespan), log result, continue regardless. Gives early visibility into OL availability without blocking startup.
+
 ## Testing
 
 - **Constraint-violation tests** — no tests verify that DB constraints fire correctly (e.g. duplicate `(book_id, author_id, role)` in `book_authors`, invalid `status` enum value). Add at least one constraint-violation test per table before integration tests run in CI.

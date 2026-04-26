@@ -19,6 +19,8 @@ dependencies = [
     "uuid-utils>=0.14.1",
     "cryptography>=47.0.0",
     "greenlet>=3.4.0",
+    "tenacity>=9.1.4",
+    "python-dateutil>=2.9.0.post0",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -29,6 +31,7 @@ dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.24",
     "ruff>=0.6",
+    "types-python-dateutil>=2.9.0.20260408",
 ]
 
 [tool.ruff]
@@ -41,3 +44,5 @@ select = ["E", "F", "I", "UP"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+addopts = "-m 'not network'"
+markers = ["network: requires live network access, skipped by default"]
