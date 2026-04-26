@@ -31,7 +31,7 @@ class CloudClient:
         self._http = http_client
         # Set auth header as safety net regardless of whether caller pre-set it
         self._http.headers.update({"X-Librarr-Key": api_key})
-        self._http.event_hooks["response"] = [self._log_response]
+        self._http.event_hooks["response"].append(self._log_response)
 
     async def _log_response(self, response: httpx.Response) -> None:
         """Async httpx event hook — logs every response at INFO level."""

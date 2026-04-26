@@ -92,7 +92,7 @@ class OpenLibraryClient:
 
     def __init__(self, http_client: httpx.AsyncClient) -> None:
         self._http = http_client
-        self._http.event_hooks["response"] = [self._log_response]
+        self._http.event_hooks["response"].append(self._log_response)
 
     async def _log_response(self, response: httpx.Response) -> None:
         """Async httpx event hook — logs every response at INFO level."""
