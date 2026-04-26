@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 import time
-from datetime import date
+from datetime import date, datetime
 
 import httpx
 import structlog
@@ -361,7 +361,7 @@ class OpenLibraryClient:
         if data.publish_date:
             try:
                 publication_date = dateutil_parser.parse(
-                    data.publish_date, default=date(1, 1, 1)
+                    data.publish_date, default=datetime(1, 1, 1)
                 ).date()
             except (ValueError, OverflowError):
                 year_match = re.search(r"\d{4}", data.publish_date)
