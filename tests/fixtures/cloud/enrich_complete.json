@@ -1,0 +1,12 @@
+{
+  "request_id": "req-abc123",
+  "status": "complete",
+  "result": {
+    "type": "book",
+    "ol_work_id": "OL45804W",
+    "title": "The Left Hand of Darkness",
+    "publication_year": 1969,
+    "authors": [{"name": "Ursula K. Le Guin", "ol_id": "OL26320A"}],
+    "system_confidence": 0.95
+  }
+}

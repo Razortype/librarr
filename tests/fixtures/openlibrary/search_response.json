@@ -1,0 +1,23 @@
+{
+  "num_found": 2,
+  "docs": [
+    {
+      "key": "/works/OL45804W",
+      "title": "The Left Hand of Darkness",
+      "author_name": ["Ursula K. Le Guin"],
+      "author_key": ["/authors/OL26320A"],
+      "first_publish_year": 1969,
+      "cover_i": 8739161,
+      "language": ["eng"],
+      "series": ["Hainish Cycle"]
+    },
+    {
+      "key": "/works/OL59827W",
+      "title": "The Dispossessed",
+      "author_name": ["Ursula K. Le Guin"],
+      "author_key": ["/authors/OL26320A"],
+      "first_publish_year": 1974,
+      "cover_i": 8739162
+    }
+  ]
+}

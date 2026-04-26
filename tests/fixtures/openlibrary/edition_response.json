@@ -1,0 +1,13 @@
+{
+  "key": "/books/OL7353617M",
+  "title": "The Left Hand of Darkness",
+  "works": [{"key": "/works/OL45804W"}],
+  "isbn_13": ["9780441478125"],
+  "isbn_10": ["0441478123"],
+  "publishers": ["Ace Books"],
+  "publish_date": "March 1, 1987",
+  "number_of_pages": 286,
+  "languages": [{"key": "/languages/eng"}],
+  "covers": [8739161],
+  "physical_format": "Paperback"
+}
