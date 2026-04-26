@@ -21,57 +21,30 @@ depends_on = None
 # Enum types (Postgres native)
 # ---------------------------------------------------------------------------
 
+# create_type=False: we manage DDL explicitly via op.execute() to stay async-safe
 bookstatus = sa.Enum(
-    "wanted",
-    "monitored",
-    "unmonitored",
-    "archived",
-    name="bookstatus",
+    "wanted", "monitored", "unmonitored", "archived",
+    name="bookstatus", create_type=False,
 )
-
 authorrole = sa.Enum(
-    "primary",
-    "co_author",
-    "contributor",
-    "translator",
-    "illustrator",
-    name="authorrole",
+    "primary", "co_author", "contributor", "translator", "illustrator",
+    name="authorrole", create_type=False,
 )
-
 editionformat = sa.Enum(
-    "hardcover",
-    "paperback",
-    "ebook",
-    "audiobook",
-    "large_print",
-    "mass_market",
-    name="editionformat",
+    "hardcover", "paperback", "ebook", "audiobook", "large_print", "mass_market",
+    name="editionformat", create_type=False,
 )
-
 downloadstatus = sa.Enum(
-    "queued",
-    "searching",
-    "downloading",
-    "completed",
-    "failed",
-    "imported",
-    "cancelled",
-    name="downloadstatus",
+    "queued", "searching", "downloading", "completed", "failed", "imported", "cancelled",
+    name="downloadstatus", create_type=False,
 )
-
 integrationtype = sa.Enum(
-    "prowlarr",
-    "qbittorrent",
-    "calibre",
-    name="integrationtype",
+    "prowlarr", "qbittorrent", "calibre",
+    name="integrationtype", create_type=False,
 )
-
 cacheentitytype = sa.Enum(
-    "author",
-    "book",
-    "edition",
-    "series",
-    name="cacheentitytype",
+    "author", "book", "edition", "series",
+    name="cacheentitytype", create_type=False,
 )
 
 
@@ -132,7 +105,10 @@ def upgrade() -> None:
     )
 
     # -- books ----------------------------------------------------------------
-    bookstatus.create(op.get_bind(), checkfirst=True)
+    op.execute(sa.text(
+        "CREATE TYPE IF NOT EXISTS bookstatus AS ENUM"
+        " ('wanted', 'monitored', 'unmonitored', 'archived')"
+    ))
     op.create_table(
         "books",
         sa.Column("id", sa.UUID(), nullable=False),
@@ -169,7 +145,10 @@ def upgrade() -> None:
     )
 
     # -- book_authors ---------------------------------------------------------
-    authorrole.create(op.get_bind(), checkfirst=True)
+    op.execute(sa.text(
+        "CREATE TYPE IF NOT EXISTS authorrole AS ENUM"
+        " ('primary', 'co_author', 'contributor', 'translator', 'illustrator')"
+    ))
     op.create_table(
         "book_authors",
         sa.Column("id", sa.UUID(), nullable=False),
@@ -184,13 +163,16 @@ def upgrade() -> None:
     )
 
     # -- editions -------------------------------------------------------------
-    editionformat.create(op.get_bind(), checkfirst=True)
+    op.execute(sa.text(
+        "CREATE TYPE IF NOT EXISTS editionformat AS ENUM"
+        " ('hardcover', 'paperback', 'ebook', 'audiobook', 'large_print', 'mass_market')"
+    ))
     op.create_table(
         "editions",
         sa.Column("id", sa.UUID(), nullable=False),
         sa.Column("book_id", sa.UUID(), nullable=False),
-        sa.Column("isbn_10", sa.String(), nullable=True),
-        sa.Column("isbn_13", sa.String(), nullable=True),
+        sa.Column("isbn_10", sa.String(10), nullable=True),
+        sa.Column("isbn_13", sa.String(13), nullable=True),
         sa.Column("asin", sa.String(), nullable=True),
         sa.Column("format", editionformat, nullable=True),
         sa.Column("language", sa.String(), nullable=True),
@@ -224,7 +206,10 @@ def upgrade() -> None:
     op.create_index("ix_editions_asin", "editions", ["asin"])
 
     # -- downloads ------------------------------------------------------------
-    downloadstatus.create(op.get_bind(), checkfirst=True)
+    op.execute(sa.text(
+        "CREATE TYPE IF NOT EXISTS downloadstatus AS ENUM"
+        " ('queued', 'searching', 'downloading', 'completed', 'failed', 'imported', 'cancelled')"
+    ))
     op.create_table(
         "downloads",
         sa.Column("id", sa.UUID(), nullable=False),
@@ -303,7 +288,9 @@ def upgrade() -> None:
     )
 
     # -- integration_configs --------------------------------------------------
-    integrationtype.create(op.get_bind(), checkfirst=True)
+    op.execute(sa.text(
+        "CREATE TYPE IF NOT EXISTS integrationtype AS ENUM ('prowlarr', 'qbittorrent', 'calibre')"
+    ))
     op.create_table(
         "integration_configs",
         sa.Column("id", sa.UUID(), nullable=False),
@@ -329,7 +316,9 @@ def upgrade() -> None:
     )
 
     # -- metadata_cache -------------------------------------------------------
-    cacheentitytype.create(op.get_bind(), checkfirst=True)
+    op.execute(sa.text(
+        "CREATE TYPE IF NOT EXISTS cacheentitytype AS ENUM ('author', 'book', 'edition', 'series')"
+    ))
     op.create_table(
         "metadata_cache",
         sa.Column("external_id", sa.String(), nullable=False),
@@ -384,9 +373,9 @@ def downgrade() -> None:
     op.drop_table("authors")
     op.drop_table("series")
 
-    cacheentitytype.drop(op.get_bind(), checkfirst=True)
-    integrationtype.drop(op.get_bind(), checkfirst=True)
-    downloadstatus.drop(op.get_bind(), checkfirst=True)
-    editionformat.drop(op.get_bind(), checkfirst=True)
-    authorrole.drop(op.get_bind(), checkfirst=True)
-    bookstatus.drop(op.get_bind(), checkfirst=True)
+    op.execute(sa.text("DROP TYPE IF EXISTS cacheentitytype"))
+    op.execute(sa.text("DROP TYPE IF EXISTS integrationtype"))
+    op.execute(sa.text("DROP TYPE IF EXISTS downloadstatus"))
+    op.execute(sa.text("DROP TYPE IF EXISTS editionformat"))
+    op.execute(sa.text("DROP TYPE IF EXISTS authorrole"))
+    op.execute(sa.text("DROP TYPE IF EXISTS bookstatus"))
