@@ -36,8 +36,9 @@ if TYPE_CHECKING:
 
 logger = structlog.get_logger(__name__)
 
-# External ID sources checked in priority order for author dedup
-_AUTHOR_DEDUP_SOURCES = ("openlibrary", "openlibrary_author", "goodreads", "isni", "wikidata")
+# External ID sources checked in priority order for author dedup.
+# Extend this tuple when new metadata sources land (see docs/FOLLOWUPS.md).
+_AUTHOR_DEDUP_SOURCES = ("openlibrary_author", "openlibrary")
 
 
 class BookService:
@@ -380,11 +381,8 @@ class BookService:
         ol_id: str | None,
         system_confidence: float,
     ) -> Author:
-        # Currently only OL provides external_ids; goodreads/isni/wikidata
-        # become reachable when those metadata sources land (see FOLLOWUPS.md).
-        # Priority 1–2: check known external ID sources
         if ol_id:
-            for source in ("openlibrary_author", "openlibrary"):
+            for source in _AUTHOR_DEDUP_SOURCES:
                 match = await repo.get_by_external_id(source, ol_id)
                 if match:
                     await repo.merge_external_ids(match, {source: ol_id})
