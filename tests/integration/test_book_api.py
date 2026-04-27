@@ -567,3 +567,98 @@ async def test_full_happy_path(api_client: httpx.AsyncClient) -> None:
     # 8. List?status=wanted → empty; list?status=archived → 1
     assert (await api_client.get("/api/v1/book?status=wanted")).json()["total"] == 0
     assert (await api_client.get("/api/v1/book?status=archived")).json()["total"] == 1
+
+
+# ---------------------------------------------------------------------------
+# Reviewer-fix regression tests
+# ---------------------------------------------------------------------------
+
+
+async def test_merge_external_ids_incoming_wins_on_collision(
+    api_client: httpx.AsyncClient,
+    mock_metadata_service: object,
+    db_session: object,
+) -> None:
+    """Incoming external ID value wins when the same key already exists."""
+    import uuid as _uuid
+
+    from app.models.author import Author as AuthorModel
+
+    # Add book → author created with openlibrary_author: OL999A
+    r = await api_client.post("/api/v1/book", json=_title("Book One"))
+    assert r.status_code == 201
+    author_id = r.json()["book"]["authors"][0]["id"]
+
+    # Manually set the same key to a stale value
+    author_obj = await db_session.get(AuthorModel, _uuid.UUID(author_id))  # type: ignore[union-attr]
+    author_obj.external_ids = {**author_obj.external_ids, "openlibrary_author": "OL_STALE"}
+    await db_session.commit()  # type: ignore[union-attr]
+
+    # Add second book — same mock returns ol_id=OL999A (the "incoming" fresher value)
+    r2 = await api_client.post("/api/v1/book", json=_title("Book Two"))
+    assert r2.status_code == 201
+    assert r2.json()["book"]["authors"][0]["id"] == author_id
+
+    # Incoming OL999A should have overwritten stale OL_STALE
+    r_author = await api_client.get(f"/api/v1/author/{author_id}")
+    assert r_author.json()["external_ids"]["openlibrary_author"] == "OL999A"
+
+
+async def test_isbn10_x_check_digit_accepted(api_client: httpx.AsyncClient) -> None:
+    """ISBN-10 ending in X is a valid Mod-11 check digit and must be accepted."""
+    r = await api_client.post("/api/v1/book", json={"lookup_type": "isbn", "isbn": "080701429X"})
+    assert r.status_code == 201
+
+
+async def test_isbn10_invalid_last_char_rejected(api_client: httpx.AsyncClient) -> None:
+    """ISBN-10 ending in a non-digit non-X character is invalid — must be 422."""
+    r = await api_client.post("/api/v1/book", json={"lookup_type": "isbn", "isbn": "080701429Z"})
+    assert r.status_code == 422
+
+
+async def test_soft_delete_already_archived_returns_409(
+    api_client: httpx.AsyncClient,
+) -> None:
+    """Archiving an already-archived book returns 409, not 200."""
+    r_add = await api_client.post("/api/v1/book", json=_TITLE_PAYLOAD)
+    book_id = r_add.json()["book"]["id"]
+
+    r1 = await api_client.delete(f"/api/v1/book/{book_id}")
+    assert r1.status_code == 200
+    assert r1.json()["archived"] is True
+
+    r2 = await api_client.delete(f"/api/v1/book/{book_id}")
+    assert r2.status_code == 409
+    body = r2.json()
+    assert body["error"] == "already_archived"
+    assert body["details"]["book_id"] == book_id
+
+
+async def test_sort_author_name_with_author_id_filter(
+    api_client: httpx.AsyncClient,
+    mock_metadata_service: object,
+) -> None:
+    """?author_id=X&sort_key=author_name must not error (Author join fixed)."""
+    r = await api_client.post("/api/v1/book", json=_TITLE_PAYLOAD)
+    assert r.status_code == 201
+    author_id = r.json()["book"]["authors"][0]["id"]
+
+    r_list = await api_client.get(f"/api/v1/book?author_id={author_id}&sort_key=author_name")
+    assert r_list.status_code == 200
+    assert r_list.json()["total"] == 1
+
+
+async def test_patch_advances_updated_at(api_client: httpx.AsyncClient) -> None:
+    """PATCH must advance updated_at (Core UPDATE now sets it explicitly)."""
+    import asyncio
+
+    r_add = await api_client.post("/api/v1/book", json=_TITLE_PAYLOAD)
+    book_id = r_add.json()["book"]["id"]
+    created_updated_at = r_add.json()["book"]["updated_at"]
+
+    # Small sleep to ensure the timestamp differs
+    await asyncio.sleep(0.01)
+
+    r_patch = await api_client.patch(f"/api/v1/book/{book_id}", json={"title": "New Title"})
+    assert r_patch.status_code == 200
+    assert r_patch.json()["updated_at"] != created_updated_at
