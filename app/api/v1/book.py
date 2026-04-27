@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -41,7 +41,9 @@ async def add_book(
 async def list_books(
     svc: Annotated[BookService, Depends(_book_service)],
     db: Annotated[AsyncSession, Depends(get_db)],
-    status: Annotated[str | None, Query()] = None,
+    status: Annotated[
+        Literal["wanted", "monitored", "unmonitored", "archived"] | None, Query()
+    ] = None,
     author_id: Annotated[uuid.UUID | None, Query()] = None,
     series_id: Annotated[uuid.UUID | None, Query()] = None,
     monitored: Annotated[bool | None, Query()] = None,
