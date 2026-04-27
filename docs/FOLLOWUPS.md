@@ -13,12 +13,16 @@ Intentional technical debts and deferred work. Each item must be resolved before
 
 ## Infrastructure / performance
 
+- **Move httpx.AsyncClient to app-lifetime singletons via FastAPI lifespan** (`app/core/deps.py`) — per-request clients are intentional for v0.1 simplicity. Connection pooling matters at >10 req/s; migrate before first endpoint hits sustained traffic.
+- **Scheduled retry for unresolved books** — books added with `system_confidence=0.0` (metadata unavailable at add time) are never automatically re-enriched. Implement an Arq task that runs hourly, picks up `status=wanted` books with `system_confidence=0.0`, and re-runs metadata enrichment with exponential backoff per book.
 - **Circuit breaker (aiobreaker)** — tenacity-only is sufficient for A. Introduce a real circuit breaker when concurrent metadata enrichment lands (multiple simultaneous search requests) — at that scale, repeated failures against OL/cloud cascade. Add before the concurrent enrichment Arq task ships.
 - **Move cloud polling to Arq task** — the metadata service currently drives the cloud poll loop synchronously. This blocks a worker for up to 30s under slow cloud responses. Move to an Arq background task before concurrent search is exposed via API endpoints.
 - **OL startup health check** — ping `GET /api/` on OL client startup (via FastAPI lifespan), log result, continue regardless. Gives early visibility into OL availability without blocking startup.
 
 ## Code quality / OL client
 
+- **book_service.py assembler extraction** (`app/services/book_service.py`) — file is ~500 lines. Extract pure schema-assembly helpers (`_row_to_list_item`, `_author_with_role_to_schema`, `_edition_to_schema`, `_author_to_detail`) to `app/schemas/assemblers.py` if file grows past 700 lines or helpers are reused outside book_service.
+- **Author dedup: goodreads/isni/wikidata** (`app/services/book_service.py` `_dedup_or_create_author`) — dedup loop only checks OL sources today. Wire goodreads, isni, wikidata lookups when those metadata sources land.
 - **Extract `@retry` decorator to module-level constant** (`app/integrations/openlibrary/client.py`) — the same `@retry(...)` config is copy-pasted on all four public methods. Extract to `_OL_RETRY = retry(...)` and apply `@_OL_RETRY` to eliminate duplication.
 - **OL `fields=*` on search requests** — every `search_books` call requests all available OL fields. A targeted field list (only fields actually used in `_normalize_search_doc`) would reduce response payload on large result sets. Low priority until OL response sizes become measurable.
 - **`load_fixture` as a bare function** (`tests/conftest.py`) — works as a utility, but as a bare function (not a `pytest.fixture`) it can't be parameterized later. Consider converting to a fixture when parameterized fixture tests are needed.

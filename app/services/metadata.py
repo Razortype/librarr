@@ -107,6 +107,13 @@ class MetadataService:
         except OLNotFoundError:
             return None
 
+    async def lookup_work(self, ol_work_id: str) -> BookMetadata | None:
+        """Fetch full work detail by Open Library work ID. Returns None if not found."""
+        try:
+            return await self._ol.lookup_work(ol_work_id)
+        except OLNotFoundError:
+            return None
+
     async def _cloud_enrich_with_poll(
         self, query: str, entity_type: str
     ) -> MetadataResult | None:
