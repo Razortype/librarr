@@ -78,8 +78,8 @@ class AuthorRepository:
     async def merge_external_ids(
         self, author: Author, new_ids: dict[str, str]
     ) -> None:
-        """Merge new external IDs into existing without overwriting present ones."""
-        merged = {**new_ids, **author.external_ids}
+        """Merge new_ids into author.external_ids; incoming values win on collision."""
+        merged = {**author.external_ids, **new_ids}
         if merged != author.external_ids:
             author.external_ids = merged
             await self._s.flush()
