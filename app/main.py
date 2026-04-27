@@ -4,6 +4,9 @@ import importlib.metadata
 
 from fastapi import FastAPI
 
+from app.api.errors import register_error_handlers
+from app.api.v1 import book as book_router
+from app.api.v1 import command as command_router
 from app.api.v1 import system
 from app.core.logging import configure_logging
 
@@ -13,6 +16,10 @@ def create_app() -> FastAPI:
 
     application = FastAPI(title="librarr", version=importlib.metadata.version("librarr"))
     application.include_router(system.router, prefix="/api/v1/system")
+    application.include_router(book_router.router, prefix="/api/v1/book", tags=["book"])
+    application.include_router(command_router.router, prefix="/api/v1/command", tags=["command"])
+
+    register_error_handlers(application)
 
     return application
 
