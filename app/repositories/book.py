@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import delete, func, select, update
@@ -175,7 +176,9 @@ class BookRepository:
         updates: dict[str, Any],
     ) -> Book | None:
         await self._s.execute(
-            update(Book).where(Book.id == book_id).values(**updates)
+            update(Book)
+            .where(Book.id == book_id)
+            .values(**updates, updated_at=datetime.now(tz=UTC))
         )
         await self._s.flush()
         return await self.get(book_id)
