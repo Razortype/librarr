@@ -88,6 +88,10 @@ class BookService:
                 if result.ol_work_id:
                     try:
                         work = await self._meta.lookup_work(result.ol_work_id)
+                    except Exception:  # noqa: BLE001
+                        work = None
+                        warnings.append("Work details unavailable; edition metadata only.")
+                    if work is not None:
                         book_data["description"] = work.description
                         book_data["publication_year"] = work.publication_year
                         book_data["external_ids"] = {
@@ -95,8 +99,6 @@ class BookService:
                             **work.external_ids,
                         }
                         author_stubs = work.authors
-                    except Exception:  # noqa: BLE001
-                        warnings.append("Work details unavailable; edition metadata only.")
             else:
                 warnings.append(
                     f"No metadata found for ISBN {request.isbn}. "
