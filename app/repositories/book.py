@@ -59,7 +59,6 @@ class BookRepository:
     ) -> tuple[list[BookListRow], int]:
         stmt = select(Book).options(
             selectinload(Book.editions),
-            selectinload(Book.series),
         )
 
         stmt = self._apply_filters(stmt, status=status, author_id=author_id,
