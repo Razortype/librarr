@@ -28,6 +28,10 @@ Intentional technical debts and deferred work. Each item must be resolved before
 - **`load_fixture` as a bare function** (`tests/conftest.py`) — works as a utility, but as a bare function (not a `pytest.fixture`) it can't be parameterized later. Consider converting to a fixture when parameterized fixture tests are needed.
 - **`TimeoutError` catch comment** (`app/services/metadata.py`) — catching bare `TimeoutError` is correct for Python 3.13+ (it's a superclass of `asyncio.TimeoutError` since 3.11). Add an inline comment so future readers don't "fix" it to `asyncio.TimeoutError` if the Python floor ever drops.
 
+## API design
+
+- **API path naming review pre-1.0** — `GET /api/v1/author/{id}/book` uses singular sub-resource naming (matching *arr convention) while the top-level collection is `/api/v1/book` (also singular). The inconsistency is minor but worth a sweep of all sub-resource paths before the 1.0 public API freeze to confirm they follow the same convention throughout.
+
 ## Testing
 
 - **Constraint-violation tests** — no tests verify that DB constraints fire correctly (e.g. duplicate `(book_id, author_id, role)` in `book_authors`, invalid `status` enum value). Add at least one constraint-violation test per table before integration tests run in CI.
