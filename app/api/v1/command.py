@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_db
 from app.core.deps import get_metadata_service
+from app.core.exceptions import BookNotFoundError
 from app.schemas.command import CommandRequest, CommandResponse
 from app.services.book_service import BookService
 from app.services.metadata import MetadataService
@@ -57,7 +58,13 @@ async def run_command(
 
         # Inline execution — returns 'completed' synchronously.
         # Will become async when Arq command queue lands (see ROADMAP).
-        await svc.refresh_book(book_id, db)
+        try:
+            await svc.refresh_book(book_id, db)
+        except BookNotFoundError as exc:
+            raise HTTPException(
+                status_code=422,
+                detail={"error": "command_target_invalid", "message": str(exc)},
+            ) from exc
         ended = datetime.now(tz=UTC)
         return CommandResponse(
             id=command_id,
