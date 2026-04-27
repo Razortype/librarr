@@ -330,15 +330,17 @@ class BookService:
         self, book: Book, books: BookRepository, db: AsyncSession
     ) -> BookDetail:
         author_rows = await books.get_authors_for_book(book.id)
-        cover_url = next(
-            (e.cover_url for e in (book.editions or []) if e.cover_url), None
-        )
+
+        # Explicitly query editions and cover — never access ORM relationships
+        # to avoid synchronous lazy-load in async context.
+        editions = await EditionRepository(db).list_by_book(book.id)
+        cover_url = next((e.cover_url for e in editions if e.cover_url), None)
         if cover_url is None:
             cover_url = await books.get_cover_url(book.id)
 
         series: SeriesRef | None = None
         if book.series_id is not None:
-            s = book.series or await books.get_series(book.series_id)
+            s = await books.get_series(book.series_id)
             if s:
                 series = SeriesRef(
                     id=str(s.id),
@@ -358,7 +360,7 @@ class BookService:
             series_position=book.series_position,
             cover_url=cover_url,
             authors=[_author_with_role_to_schema(r) for r in author_rows],
-            editions=[_edition_to_schema(e) for e in (book.editions or [])],
+            editions=[_edition_to_schema(e) for e in editions],
             external_ids={k: str(v) for k, v in (book.external_ids or {}).items()},
             system_confidence=book.system_confidence,
             user_confidence=book.user_confidence,
