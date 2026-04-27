@@ -339,8 +339,6 @@ class BookService:
         # to avoid synchronous lazy-load in async context.
         editions = await EditionRepository(db).list_by_book(book.id)
         cover_url = next((e.cover_url for e in editions if e.cover_url), None)
-        if cover_url is None:
-            cover_url = await books.get_cover_url(book.id)
 
         series: SeriesRef | None = None
         if book.series_id is not None:

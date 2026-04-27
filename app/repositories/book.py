@@ -262,13 +262,5 @@ class BookRepository:
             result.setdefault(book_id, author)
         return result
 
-    async def get_cover_url(self, book_id: uuid.UUID) -> str | None:
-        stmt = (
-            select(Edition.cover_url)
-            .where(Edition.book_id == book_id, Edition.cover_url.is_not(None))
-            .limit(1)
-        )
-        return (await self._s.execute(stmt)).scalar_one_or_none()
-
     async def get_series(self, series_id: uuid.UUID) -> Series | None:
         return await self._s.get(Series, series_id)
