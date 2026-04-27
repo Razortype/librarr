@@ -4,7 +4,12 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from app.core.exceptions import AuthorNotFoundError, BookNotFoundError, DuplicateBookError
+from app.core.exceptions import (
+    AlreadyArchivedError,
+    AuthorNotFoundError,
+    BookNotFoundError,
+    DuplicateBookError,
+)
 
 
 class ErrorResponse(BaseModel):
@@ -44,5 +49,16 @@ def register_error_handlers(app: FastAPI) -> None:
                 error="conflict",
                 message=str(exc),
                 details={"isbn": exc.isbn, "existing_book_id": exc.existing_id},
+            ).model_dump(),
+        )
+
+    @app.exception_handler(AlreadyArchivedError)
+    async def _already_archived(request: Request, exc: AlreadyArchivedError) -> JSONResponse:
+        return JSONResponse(
+            status_code=409,
+            content=ErrorResponse(
+                error="already_archived",
+                message=str(exc),
+                details={"book_id": exc.book_id},
             ).model_dump(),
         )

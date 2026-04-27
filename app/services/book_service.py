@@ -6,7 +6,12 @@ from typing import TYPE_CHECKING
 import structlog
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import AuthorNotFoundError, BookNotFoundError, DuplicateBookError
+from app.core.exceptions import (
+    AlreadyArchivedError,
+    AuthorNotFoundError,
+    BookNotFoundError,
+    DuplicateBookError,
+)
 from app.repositories.author import AuthorRepository
 from app.repositories.book import AuthorWithRole, BookRepository
 from app.repositories.edition import EditionRepository
@@ -256,9 +261,11 @@ class BookService:
             await db.commit()
             return {"deleted": True, "id": str(book_id)}
 
-        archived = await books.soft_delete(book_id)
-        if not archived:
+        result = await books.soft_delete(book_id)
+        if result is None:
             raise BookNotFoundError(str(book_id))
+        if result is False:
+            raise AlreadyArchivedError(str(book_id))
         await db.commit()
         return {"archived": True, "deleted": False, "id": str(book_id)}
 

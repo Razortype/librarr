@@ -24,6 +24,12 @@ class DuplicateBookError(LibrarrError):
         super().__init__(f"Book with ISBN {isbn} already exists: {existing_id}")
 
 
+class AlreadyArchivedError(LibrarrError):
+    def __init__(self, book_id: str) -> None:
+        self.book_id = book_id
+        super().__init__(f"Book {book_id} is already archived")
+
+
 class MetadataUnavailableError(LibrarrError):
     def __init__(self, reason: str) -> None:
         self.reason = reason

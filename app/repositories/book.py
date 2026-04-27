@@ -183,12 +183,18 @@ class BookRepository:
         await self._s.flush()
         return await self.get(book_id)
 
-    async def soft_delete(self, book_id: uuid.UUID) -> bool:
+    async def soft_delete(self, book_id: uuid.UUID) -> bool | None:
+        """Archive a book. Returns True on success, False if already archived, None if not found."""
         result = await self._s.execute(
-            update(Book).where(Book.id == book_id).values(status="archived")
+            update(Book)
+            .where(Book.id == book_id, Book.status != "archived")
+            .values(status="archived", updated_at=datetime.now(tz=UTC))
         )
         await self._s.flush()
-        return result.rowcount > 0
+        if result.rowcount > 0:
+            return True
+        exists = await self._s.get(Book, book_id)
+        return False if exists is not None else None
 
     async def hard_delete(self, book_id: uuid.UUID) -> bool:
         result = await self._s.execute(
