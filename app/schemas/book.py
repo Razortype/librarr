@@ -42,8 +42,15 @@ class IsbnLookup(BaseModel):
     @classmethod
     def validate_isbn(cls, v: str) -> str:
         digits = re.sub(r"[\s\-]", "", v)
-        if len(digits) not in (10, 13) or not digits[:-1].isdigit():
-            raise ValueError("ISBN must be 10 or 13 digits")
+        if len(digits) == 10:
+            # ISBN-10: first 9 chars are digits; last is digit or X (Mod-11 check)
+            valid = digits[:9].isdigit() and (digits[9].isdigit() or digits[9].upper() == "X")
+        elif len(digits) == 13:
+            valid = digits.isdigit()
+        else:
+            valid = False
+        if not valid:
+            raise ValueError("ISBN must be 10 or 13 digits; ISBN-10 may end with X")
         return digits
 
 
