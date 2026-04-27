@@ -232,13 +232,20 @@ class BookRepository:
     def _apply_sort(self, stmt: Any, *, sort_key: str, sort_dir: str,
                     author_id_filter: uuid.UUID | None) -> Any:
         if sort_key == "author_name":
-            # Only join if not already joined for filtering
             if author_id_filter is None:
+                # No existing join — add both association and author tables
                 stmt = stmt.outerjoin(
                     book_authors_table,
                     (Book.id == book_authors_table.c.book_id)
                     & (book_authors_table.c.role == "primary"),
                 ).outerjoin(Author, Author.id == book_authors_table.c.author_id)
+            else:
+                # _apply_filters already joined book_authors_table (all roles).
+                # Add Author join and deduplicate in case a book has the author
+                # in multiple roles.
+                stmt = stmt.outerjoin(
+                    Author, Author.id == book_authors_table.c.author_id
+                ).distinct()
             col = Author.sort_name
         else:
             col = _SORT_COLUMNS.get(sort_key, Book.title)
