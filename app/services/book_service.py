@@ -88,7 +88,9 @@ class BookService:
                 if result.ol_work_id:
                     try:
                         work = await self._meta.lookup_work(result.ol_work_id)
-                    except Exception:  # noqa: BLE001
+                    except Exception:  # noqa: BLE001 — intentional broad catch: any OL/cloud
+                        # failure (timeout, parse error, 5xx) triggers graceful degradation
+                        # rather than failing the entire add-book request.
                         work = None
                         warnings.append("Work details unavailable; edition metadata only.")
                     if work is not None:
