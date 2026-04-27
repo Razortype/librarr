@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import uuid
 from datetime import date, datetime
 from typing import Annotated, Literal
 
@@ -59,7 +60,7 @@ class BookPatchRequest(BaseModel):
     original_language: str | None = None
     publication_year: int | None = None
     description: str | None = None
-    series_id: str | None = None
+    series_id: uuid.UUID | None = None
     series_position: float | None = None
     external_ids: dict[str, str] | None = None
 

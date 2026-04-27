@@ -3,12 +3,12 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class CommandRequest(BaseModel):
     name: str
-    body: dict = {}
+    body: dict = Field(default_factory=dict)
 
 
 class CommandResponse(BaseModel):
