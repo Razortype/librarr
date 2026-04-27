@@ -94,6 +94,7 @@ class BookRepository:
                 selectinload(Book.editions),
                 selectinload(Book.series),
             )
+            .execution_options(populate_existing=True)
         )
         return (await self._s.execute(stmt)).scalar_one_or_none()
 
