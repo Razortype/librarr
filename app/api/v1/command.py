@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from typing import Annotated
 
 import structlog
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_db
@@ -49,12 +49,10 @@ async def run_command(
     if request.name == "RefreshBook":
         book_id_raw = request.body.get("bookId")
         if not book_id_raw:
-            from fastapi import HTTPException
             raise HTTPException(status_code=422, detail="RefreshBook requires body.bookId")
         try:
             book_id = uuid.UUID(str(book_id_raw))
         except ValueError:
-            from fastapi import HTTPException
             raise HTTPException(status_code=422, detail="body.bookId must be a valid UUID")
 
         # Inline execution — returns 'completed' synchronously.
@@ -71,7 +69,6 @@ async def run_command(
             body=request.body,
         )
 
-    from fastapi import HTTPException
     known = "RefreshBook, BookSearch, RescanLibrary"
     raise HTTPException(
         status_code=422,
