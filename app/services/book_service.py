@@ -161,7 +161,8 @@ class BookService:
             position += 1
 
         await db.commit()
-        await db.refresh(book)
+        # Reload via repository to get fresh scalars with populate_existing
+        book = await books.get(book.id)  # type: ignore[assignment]
 
         book_detail = await self._build_book_detail(book, books, db)
         return BookCreateResponse(
