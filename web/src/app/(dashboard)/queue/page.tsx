@@ -1,7 +1,15 @@
-export default function QueuePage() {
+import { Suspense } from "react";
+import { QueuePageClient } from "@/components/queue/queue-page-client";
+
+export default async function QueuePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  await searchParams;
   return (
-    <div className="flex h-full items-center justify-center">
-      <p className="text-text-3 text-sm font-mono">Queue — coming in v0.1.x</p>
-    </div>
+    <Suspense fallback={null}>
+      <QueuePageClient />
+    </Suspense>
   );
 }

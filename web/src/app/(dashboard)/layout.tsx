@@ -31,7 +31,10 @@ export default function DashboardLayout({
       <div className="app">
         <Sidebar />
         <main className="main">
-          <Topbar title={pathnameToTitle(pathname)} />
+          {!pathname.startsWith("/books") &&
+            !pathname.startsWith("/queue") && (
+              <Topbar title={pathnameToTitle(pathname)} />
+            )}
           {children}
         </main>
       </div>
