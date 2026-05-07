@@ -908,8 +908,9 @@ body {
 /* Queue page styles */
 
 .qpage {
-  padding: 22px 24px 40px;
+  padding: 0;
   max-width: 1400px;
+  margin: 0 auto;
 }
 
 /* Header */

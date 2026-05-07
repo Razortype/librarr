@@ -147,7 +147,7 @@ export function QueuePageClient() {
   };
 
   return (
-    <div className="flex-1 overflow-auto">
+    <div className="content">
       <div className="qpage">
         <QueueHeader
           downloadingCount={byState.downloading.length}
