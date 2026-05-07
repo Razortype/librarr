@@ -1,7 +1,15 @@
-export default function BooksPage() {
+import { Suspense } from "react";
+import { BooksPageClient } from "@/components/books/books-page-client";
+
+export default async function BooksPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  await searchParams;
   return (
-    <div className="flex h-full items-center justify-center">
-      <p className="text-text-3 text-sm font-mono">Books page — Step 8</p>
-    </div>
+    <Suspense fallback={null}>
+      <BooksPageClient />
+    </Suspense>
   );
 }
