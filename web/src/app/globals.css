@@ -1116,7 +1116,13 @@ body {
 .qrow.is-done { opacity: 0.78; }
 .qrow.is-done:hover { opacity: 1; }
 
-.qrow-check { display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.qrow-check {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
 .qrow-check input { position: absolute; opacity: 0; pointer-events: none; }
 .qcheck-box {
   width: 16px; height: 16px;
