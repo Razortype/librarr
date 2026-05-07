@@ -53,6 +53,10 @@ See [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md). Short version: FastAPI backe
 
 This project is built with AI-assisted coding (Claude Code). All architecture, design decisions, and code review are mine. PRs are welcome but please read [CONTRIBUTING.md](./CONTRIBUTING.md) first.
 
+## Follow-ups
+
+Open work tracked in [`web/FOLLOWUPS.md`](./web/FOLLOWUPS.md) (frontend) and [`docs/FOLLOWUPS.md`](./docs/FOLLOWUPS.md) (backend, infrastructure).
+
 ## License
 
 [AGPL-3.0](./LICENSE). If you run librarr as a service for others, your modifications must be open-sourced under the same license.

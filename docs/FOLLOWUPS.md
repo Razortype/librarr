@@ -36,3 +36,9 @@ Intentional technical debts and deferred work. Each item must be resolved before
 
 - **Constraint-violation tests** — no tests verify that DB constraints fire correctly (e.g. duplicate `(book_id, author_id, role)` in `book_authors`, invalid `status` enum value). Add at least one constraint-violation test per table before integration tests run in CI.
 - **Migration-running integration test** — CRUD smoke tests use `Base.metadata.create_all` and bypass Alembic. Add a test that runs `alembic upgrade head` + `alembic downgrade base` against a real Postgres (or temp container) in CI to catch migration-specific issues early.
+
+## Frontend integration milestones
+
+- **`web/src/components/sidebar-empty.tsx`** — Component exists from design source port but currently unimported. Will be wired during the first-launch flow port (v0.1.x). Do not delete; intentionally pending.
+
+- **`web/src/lib/api/`** — REST client modules (client.ts, books.ts, authors.ts, commands.ts, queue.ts, system.ts) written but currently unimported. Frontend pages use mock data via `lib/use-mock.ts`. Will be wired during the backend integration milestone (v0.1). Do not delete; intentionally pending.
