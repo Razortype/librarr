@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     librarr_cloud_api_key: str = ""
     # Open Library
     openlibrary_base_url: str = "https://openlibrary.org"
+    # Prowlarr indexer manager
+    prowlarr_url: str = "http://localhost:9696"
+    prowlarr_api_key: str = ""
     # HTTP timeouts (seconds)
     http_timeout_connect: float = 5.0
     http_timeout_read: float = 10.0

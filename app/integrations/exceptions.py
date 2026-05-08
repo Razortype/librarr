@@ -63,3 +63,35 @@ class CloudRequestError(CloudClientError):
     def __init__(self, status_code: int, message: str = "") -> None:
         self.status_code = status_code
         super().__init__(f"Cloud {status_code}: {message}")
+
+
+class ProwlarrError(IntegrationError):
+    """Base for Prowlarr errors."""
+
+
+class ProwlarrAuthError(ProwlarrError):
+    """401 from Prowlarr — invalid or missing API key."""
+
+
+class ProwlarrNotFoundError(ProwlarrError):
+    """404 from Prowlarr."""
+
+
+class ProwlarrRateLimitError(ProwlarrError):
+    """429 from Prowlarr. Respect Retry-After if present."""
+
+    def __init__(self, retry_after: int | None = None) -> None:
+        self.retry_after = retry_after
+        super().__init__(f"Prowlarr rate limited, retry_after={retry_after}")
+
+
+class ProwlarrServerError(ProwlarrError):
+    """5xx from Prowlarr."""
+
+    def __init__(self, status_code: int, message: str = "") -> None:
+        self.status_code = status_code
+        super().__init__(f"Prowlarr {status_code}: {message}")
+
+
+class ProwlarrTimeoutError(ProwlarrError):
+    """Timeout connecting to or reading from Prowlarr."""

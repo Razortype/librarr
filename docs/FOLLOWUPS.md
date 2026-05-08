@@ -57,6 +57,17 @@ Re-enabling requires:
 
 Do not re-enable until both the picker UI and status taxonomy are settled.
 
+## Integration credentials storage
+
+Prowlarr (and future qBittorrent / Calibre) credentials live in env vars for v0.1. The `IntegrationConfig` DB model + Fernet encryption exist in the schema but have no API endpoints yet. Before users configure multiple indexers / download clients via the UI, this needs:
+
+- GET/POST/PATCH/DELETE `/api/v1/settings/{indexer,download-client}`
+- Fernet encryption wired on config blob read/write
+- Test-connection endpoint per integration type
+- Settings page UI in the frontend
+
+Until then, librarr supports exactly one Prowlarr instance, configured via `PROWLARR_URL` + `PROWLARR_API_KEY` env vars.
+
 ## Frontend integration milestones
 
 - **`web/src/components/sidebar-empty.tsx`** — Component exists from design source port but currently unimported. Will be wired during the first-launch flow port (v0.1.x). Do not delete; intentionally pending.
