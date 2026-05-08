@@ -174,3 +174,18 @@ async def test_timeout_raises_timeout_error() -> None:
 
     with pytest.raises(ProwlarrTimeoutError):
         await client.search("q")
+
+
+async def test_connect_error_raises_timeout_error() -> None:
+    """httpx.ConnectError (e.g., Prowlarr not running) is translated to ProwlarrTimeoutError."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("connection refused")
+
+    http = httpx.AsyncClient(
+        transport=httpx.MockTransport(handler), base_url="http://prowlarr.test"
+    )
+    client = ProwlarrClient(http, api_key="k")
+
+    with pytest.raises(ProwlarrTimeoutError):
+        await client.search("q")
