@@ -1,10 +1,12 @@
 import { MOCK_BOOKS } from "./mock/books";
 import { MOCK_QUEUE_ITEMS } from "./mock/queue";
 import { MOCK_SYSTEM_STATUS } from "./mock/system";
+import { MOCK_QBITTORRENT_CONFIG } from "./mock/integrations";
 import { withMockFallback } from "./use-mock";
 import { booksApi } from "./api/books";
 import { queueApi } from "./api/queue";
 import { systemApi } from "./api/system";
+import { integrationsApi } from "./api/integrations";
 import type { BookListParams } from "./types";
 
 export const queryKeys = {
@@ -19,6 +21,10 @@ export const queryKeys = {
   },
   system: {
     status: () => ["system", "status"] as const,
+  },
+  integrations: {
+    all: ["integrations"] as const,
+    qbittorrent: () => ["integrations", "qbittorrent"] as const,
   },
 } as const;
 
@@ -51,5 +57,16 @@ export const systemQueries = {
     queryKey: queryKeys.system.status(),
     queryFn: () =>
       withMockFallback(() => systemApi.getStatus(), MOCK_SYSTEM_STATUS),
+  }),
+};
+
+export const qbittorrentQueries = {
+  config: () => ({
+    queryKey: queryKeys.integrations.qbittorrent(),
+    queryFn: () =>
+      withMockFallback(
+        () => integrationsApi.getQBittorrent(),
+        MOCK_QBITTORRENT_CONFIG,
+      ),
   }),
 };

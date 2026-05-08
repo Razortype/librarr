@@ -347,6 +347,46 @@ export interface CommandResponse {
   body: Record<string, unknown>;
 }
 
+// ── Integrations ─────────────────────────────────────────────────────────────
+
+export type QBittorrentConfig = {
+  id: string;
+  name: string;
+  host: string;
+  port: number;
+  username: string;
+  use_https: boolean;
+  enabled: boolean;
+  last_test_at: string | null;
+  last_test_ok: boolean | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type QBittorrentConfigInput = {
+  name: string;
+  host: string;
+  port: number;
+  username: string;
+  password: string;
+  use_https: boolean;
+  enabled: boolean;
+};
+
+export type QBittorrentTestRequest = {
+  host: string;
+  port: number;
+  username: string;
+  password: string;
+  use_https: boolean;
+};
+
+export type QBittorrentTestResult = {
+  ok: boolean;
+  version: string | null;
+  error: string | null;
+};
+
 // ── API error ─────────────────────────────────────────────────────────────────
 
 export interface APIError {
