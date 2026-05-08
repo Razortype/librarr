@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+import os
+
+# Must be set before app.core.config is imported (Settings() runs at module level).
+os.environ.setdefault("LIBRARR_SECRET_KEY", "1n3vmcNiJofBGpYnnfPZiNft8EKPp8iba8UpfQTLigY=")
+
 import json
 from collections.abc import AsyncGenerator
 from dataclasses import dataclass, field
