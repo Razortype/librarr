@@ -301,6 +301,21 @@ export interface QueueItem {
   avgSpeed?: string;
 }
 
+// ── Prowlarr ──────────────────────────────────────────────────────────────────
+
+export interface ProwlarrRelease {
+  guid: string;
+  title: string;
+  indexer_name: string;
+  size_bytes: number;
+  publish_date: string; // ISO datetime string
+  download_url: string;
+  info_url: string | null;
+  seeders: number | null;
+  leechers: number | null;
+  protocol: DownloadProtocol;
+}
+
 // ── System ────────────────────────────────────────────────────────────────────
 
 export interface SystemStatus {

@@ -8,6 +8,7 @@ import type {
   BookPatchRequest,
   BookSearchResponse,
   PaginatedResponse,
+  ProwlarrRelease,
 } from "@/lib/types";
 
 function buildQuery(params: Record<string, unknown>): string {
@@ -40,4 +41,8 @@ export const booksApi = {
     }),
   search: (params: { title: string; author?: string }) =>
     apiFetch<BookSearchResponse>(`/api/v1/book/search${buildQuery(params)}`),
+  searchReleases: (bookId: string) =>
+    apiFetch<ProwlarrRelease[]>(`/api/v1/book/${bookId}/search`, {
+      method: "POST",
+    }),
 };
