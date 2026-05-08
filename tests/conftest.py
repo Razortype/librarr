@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import AsyncGenerator
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
 
@@ -12,7 +12,7 @@ from httpx import ASGITransport
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.core.db import get_db
-from app.core.deps import get_metadata_service
+from app.core.deps import get_metadata_service, get_prowlarr_client
 from app.main import app
 
 # Import all models so Base.metadata is fully populated before create_all
@@ -29,6 +29,7 @@ from app.models.quality_profile import QualityProfile  # noqa: F401
 from app.models.series import Series  # noqa: F401
 from app.models.setting import Setting  # noqa: F401
 from app.schemas.metadata import AuthorStub, BookMetadata, EditionMetadata
+from app.schemas.prowlarr import ProwlarrHealth, ProwlarrRelease
 
 # ---------------------------------------------------------------------------
 # Default metadata helpers
@@ -112,9 +113,7 @@ class MockMetadataService:
     work_result: BookMetadata | None = None
     work_not_found: bool = False
 
-    async def search_books(
-        self, title: str, author: str | None = None
-    ) -> list[BookMetadata]:
+    async def search_books(self, title: str, author: str | None = None) -> list[BookMetadata]:
         if self.fail or self.search_not_found:
             return []
         if self.search_results is not None:
@@ -137,6 +136,36 @@ class MockMetadataService:
 
     async def lookup_author(self, ol_author_id: str) -> None:
         return None
+
+
+@dataclass
+class MockProwlarrClient:
+    """Configurable mock for ProwlarrClient in endpoint tests.
+
+    Defaults return empty results and a healthy status response.
+    Set fail to an exception instance to have methods raise instead of returning.
+    Inspect last_query / last_limit to assert on what the caller passed.
+    """
+
+    search_results: list[ProwlarrRelease] = field(default_factory=list)
+    health_response: ProwlarrHealth = field(
+        default_factory=lambda: ProwlarrHealth(version="1.0.0", app_name="Prowlarr")
+    )
+    fail: Exception | None = None
+    last_query: str | None = None
+    last_limit: int | None = None
+
+    async def search(self, query: str, limit: int = 25) -> list[ProwlarrRelease]:
+        self.last_query = query
+        self.last_limit = limit
+        if self.fail is not None:
+            raise self.fail
+        return list(self.search_results)
+
+    async def health(self) -> ProwlarrHealth:
+        if self.fail is not None:
+            raise self.fail
+        return self.health_response
 
 
 # ---------------------------------------------------------------------------
@@ -176,25 +205,31 @@ def mock_metadata_service() -> MockMetadataService:
 
 
 @pytest.fixture
+def mock_prowlarr_client() -> MockProwlarrClient:
+    return MockProwlarrClient()
+
+
+@pytest.fixture
 async def api_client(
     db_session: AsyncSession,
     mock_metadata_service: MockMetadataService,
+    mock_prowlarr_client: MockProwlarrClient,
 ) -> AsyncGenerator[httpx.AsyncClient]:
-    """AsyncClient against the full app with in-memory DB + mock metadata service."""
+    """AsyncClient against the full app: in-memory DB, mock metadata service, mock Prowlarr."""
 
     async def _override_get_db() -> AsyncGenerator[AsyncSession]:
         yield db_session
 
     app.dependency_overrides[get_db] = _override_get_db
     app.dependency_overrides[get_metadata_service] = lambda: mock_metadata_service
+    app.dependency_overrides[get_prowlarr_client] = lambda: mock_prowlarr_client
 
-    async with httpx.AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as c:
+    async with httpx.AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
         yield c
 
     app.dependency_overrides.pop(get_db, None)
     app.dependency_overrides.pop(get_metadata_service, None)
+    app.dependency_overrides.pop(get_prowlarr_client, None)
 
 
 @pytest.fixture
@@ -217,12 +252,8 @@ async def api_client_with_real_metadata(
 
     def _make_real_service() -> MetadataService:
         transport = _NotFoundTransport()
-        ol_http = httpx.AsyncClient(
-            base_url="https://openlibrary.org", transport=transport
-        )
-        cloud_http = httpx.AsyncClient(
-            base_url="https://api.librarr.com", transport=transport
-        )
+        ol_http = httpx.AsyncClient(base_url="https://openlibrary.org", transport=transport)
+        cloud_http = httpx.AsyncClient(base_url="https://api.librarr.com", transport=transport)
         return MetadataService(
             ol_client=OpenLibraryClient(ol_http),
             cloud_client=CloudClient(cloud_http, api_key="test-key"),
@@ -234,9 +265,7 @@ async def api_client_with_real_metadata(
     app.dependency_overrides[get_db] = _override_get_db
     app.dependency_overrides[get_metadata_service] = _make_real_service
 
-    async with httpx.AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as c:
+    async with httpx.AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
         yield c
 
     app.dependency_overrides.pop(get_db, None)
@@ -250,9 +279,7 @@ async def api_client_with_real_metadata(
 
 @pytest.fixture
 async def client() -> AsyncGenerator[httpx.AsyncClient]:
-    async with httpx.AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as c:
+    async with httpx.AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
         yield c
 
 
