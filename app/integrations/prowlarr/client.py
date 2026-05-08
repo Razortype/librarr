@@ -82,7 +82,7 @@ class ProwlarrClient:
                 url,
                 params={"query": query, "type": "search", "limit": limit},
             )
-        except httpx.TimeoutException as exc:
+        except (httpx.TimeoutException, httpx.ConnectError) as exc:
             logger.warning("prowlarr_timeout", url=url, error=str(exc))
             raise ProwlarrTimeoutError(str(exc)) from exc
 
@@ -116,7 +116,7 @@ class ProwlarrClient:
         url = "/api/v1/system/status"
         try:
             response = await self._http.get(url)
-        except httpx.TimeoutException as exc:
+        except (httpx.TimeoutException, httpx.ConnectError) as exc:
             logger.warning("prowlarr_timeout", url=url, error=str(exc))
             raise ProwlarrTimeoutError(str(exc)) from exc
 
