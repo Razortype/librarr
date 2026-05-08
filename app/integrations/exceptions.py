@@ -95,3 +95,27 @@ class ProwlarrServerError(ProwlarrError):
 
 class ProwlarrTimeoutError(ProwlarrError):
     """Timeout connecting to or reading from Prowlarr."""
+
+
+class QBittorrentError(IntegrationError):
+    """Base for qBittorrent errors."""
+
+
+class QBittorrentAuthError(QBittorrentError):
+    """Invalid credentials. Body == 'Fails.' from /api/v2/auth/login."""
+
+
+class QBittorrentForbiddenError(QBittorrentError):
+    """403 from qBittorrent — host header validation or expired session."""
+
+
+class QBittorrentServerError(QBittorrentError):
+    """5xx from qBittorrent."""
+
+    def __init__(self, status_code: int, message: str = "") -> None:
+        self.status_code = status_code
+        super().__init__(f"qBittorrent {status_code}: {message}")
+
+
+class QBittorrentTimeoutError(QBittorrentError):
+    """Timeout connecting to or reading from qBittorrent."""
