@@ -4,11 +4,17 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Cover } from "@/components/cover";
 import { StatusPill } from "@/components/status-pill";
 import { useFilteredBooks } from "@/lib/hooks/use-filtered-books";
+import type { BookStatus } from "@/lib/types";
 
-export function BooksGrid() {
+interface BooksGridProps {
+  basePath?: string;
+  lockedApiStatus?: BookStatus;
+}
+
+export function BooksGrid({ basePath = "/books", lockedApiStatus }: BooksGridProps = {}) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { filteredBooks, selectedId } = useFilteredBooks();
+  const { filteredBooks, selectedId } = useFilteredBooks({ lockedApiStatus });
 
   function handleSelect(id: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -17,7 +23,7 @@ export function BooksGrid() {
     } else {
       params.set("selected", id);
     }
-    router.push(`/books?${params.toString()}`);
+    router.push(`${basePath}?${params.toString()}`);
   }
 
   return (

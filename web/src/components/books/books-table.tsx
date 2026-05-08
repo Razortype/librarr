@@ -5,6 +5,7 @@ import { Cover } from "@/components/cover";
 import { StatusPill } from "@/components/status-pill";
 import { Icon } from "@/components/icon";
 import { useFilteredBooks, fmtDate } from "@/lib/hooks/use-filtered-books";
+import type { BookStatus } from "@/lib/types";
 
 const COLS = [
   { id: "title", label: "Title", w: "minmax(260px, 2.4fr)", sortable: true },
@@ -18,10 +19,15 @@ const COLS = [
 const GRID_COLS =
   "40px " + COLS.map((c) => c.w).join(" ") + " 36px";
 
-export function BooksTable() {
+interface BooksTableProps {
+  basePath?: string;
+  lockedApiStatus?: BookStatus;
+}
+
+export function BooksTable({ basePath = "/books", lockedApiStatus }: BooksTableProps = {}) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { filteredBooks, selectedId, sort } = useFilteredBooks();
+  const { filteredBooks, selectedId, sort } = useFilteredBooks({ lockedApiStatus });
 
   function handleSort(colId: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -31,14 +37,14 @@ export function BooksTable() {
       params.set("sort", colId);
       params.set("dir", "asc");
     }
-    router.push(`/books?${params.toString()}`);
+    router.push(`${basePath}?${params.toString()}`);
   }
 
   function handleSelect(id: string) {
     const params = new URLSearchParams(searchParams.toString());
     if (selectedId === id) params.delete("selected");
     else params.set("selected", id);
-    router.push(`/books?${params.toString()}`);
+    router.push(`${basePath}?${params.toString()}`);
   }
 
   function handleRowKey(e: React.KeyboardEvent, id: string) {
