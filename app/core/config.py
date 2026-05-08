@@ -1,6 +1,14 @@
 from __future__ import annotations
 
+from cryptography.fernet import Fernet
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_FERNET_KEY_HELP = (
+    "LIBRARR_SECRET_KEY env var is required. "
+    "Generate with: python -c "
+    "'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'"
+)
 
 
 class Settings(BaseSettings):
@@ -23,6 +31,19 @@ class Settings(BaseSettings):
     cloud_timeout_read: float = 4.5  # leaves budget for service-layer 5s fallback
     # CORS
     cors_allow_origins: list[str] = ["http://localhost:5100", "http://localhost:3000"]
+    # Encryption — required, no default
+    librarr_secret_key: str = Field(default="")
+
+    @field_validator("librarr_secret_key")
+    @classmethod
+    def validate_fernet_key(cls, v: str) -> str:
+        if not v:
+            raise ValueError(_FERNET_KEY_HELP)
+        try:
+            Fernet(v.encode())
+        except Exception:
+            raise ValueError(_FERNET_KEY_HELP)
+        return v
 
 
 settings = Settings()

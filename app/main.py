@@ -10,6 +10,7 @@ from app.api.errors import register_error_handlers
 from app.api.v1 import author as author_router
 from app.api.v1 import book as book_router
 from app.api.v1 import command as command_router
+from app.api.v1 import integrations as integrations_router
 from app.api.v1 import system
 from app.core.config import settings
 from app.core.logging import configure_logging
@@ -32,6 +33,9 @@ def create_app() -> FastAPI:
     application.include_router(book_router.router, prefix="/api/v1/book", tags=["book"])
     application.include_router(author_router.router, prefix="/api/v1/author", tags=["author"])
     application.include_router(command_router.router, prefix="/api/v1/command", tags=["command"])
+    application.include_router(
+        integrations_router.router, prefix="/api/v1/integrations", tags=["integrations"]
+    )
 
     register_error_handlers(application)
 
