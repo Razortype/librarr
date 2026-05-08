@@ -2,13 +2,37 @@
 
 import { useCallback, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useMutation } from "@tanstack/react-query";
 import { Cover } from "@/components/cover";
 import { StatusPill } from "@/components/status-pill";
 import { Icon } from "@/components/icon";
+import { APIError } from "@/lib/api/client";
+import { booksApi } from "@/lib/api/books";
 import type { MockBook } from "@/lib/mock/books";
+import type { ProwlarrRelease } from "@/lib/types";
 
 interface DetailPanelProps {
   book: MockBook;
+}
+
+function formatBytes(bytes: number): string {
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  let i = 0;
+  let val = bytes;
+  while (val >= 1024 && i < units.length - 1) {
+    val /= 1024;
+    i++;
+  }
+  return i === 0 ? `${val} ${units[i]}` : `${val.toFixed(1)} ${units[i]}`;
+}
+
+function getReleaseErrorMessage(err: unknown): string {
+  if (err instanceof APIError) {
+    if (err.status === 503) return "Prowlarr unreachable. Check that the indexer service is running.";
+    if (err.status === 502) return "Prowlarr error. Check the API key and indexer config.";
+    if (err.status === 429) return "Prowlarr is rate-limited. Try again in a moment.";
+  }
+  return "Search failed. Try again.";
 }
 
 export function DetailPanel({ book }: DetailPanelProps) {
@@ -16,6 +40,10 @@ export function DetailPanel({ book }: DetailPanelProps) {
   const searchParams = useSearchParams();
 
   const isAudio = book.format === "m4b";
+
+  const searchMutation = useMutation({
+    mutationFn: (bookId: string) => booksApi.searchReleases(bookId),
+  });
 
   const handleClose = useCallback(() => {
     const params = new URLSearchParams(searchParams.toString());
@@ -178,6 +206,38 @@ export function DetailPanel({ book }: DetailPanelProps) {
           )}
         </div>
 
+        {!searchMutation.isIdle && (
+          <div className="detail-section">
+            <div className="section-label">Available releases</div>
+            {searchMutation.isPending && (
+              <div className="releases-searching">Searching indexers…</div>
+            )}
+            {searchMutation.error && (
+              <div className="releases-error">{getReleaseErrorMessage(searchMutation.error)}</div>
+            )}
+            {searchMutation.data !== undefined && searchMutation.data.length === 0 && (
+              <div className="files-empty"><span className="dim">No releases found.</span></div>
+            )}
+            {searchMutation.data && searchMutation.data.length > 0 && (
+              <ul className="release-list">
+                {searchMutation.data.map((r: ProwlarrRelease) => (
+                  <li key={r.guid} className="release-row">
+                    <div className="release-title">{r.title}</div>
+                    <div className="release-meta">
+                      <span className="release-indexer">{r.indexer_name}</span>
+                      <span className="release-size mono">{formatBytes(r.size_bytes)}</span>
+                      <span className={`proto proto-${r.protocol}`}>{r.protocol}</span>
+                      {r.protocol === "torrent" && r.seeders != null && (
+                        <span className="release-seeders">🟢 {r.seeders}</span>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+
         <div className="detail-section">
           <div className="section-label">Activity</div>
           <ol className="timeline">
@@ -193,9 +253,14 @@ export function DetailPanel({ book }: DetailPanelProps) {
       </div>
 
       <div className="detail-actions">
-        <button className="btn btn-ghost" title="Search indexers">
+        <button
+          className="btn btn-ghost"
+          title="Search indexers"
+          onClick={() => searchMutation.mutate(book.id)}
+          disabled={searchMutation.isPending}
+        >
           <Icon name="refresh" size={13} />
-          <span>Search again</span>
+          <span>{searchMutation.isPending ? "Searching…" : "Search again"}</span>
         </button>
         <button className="btn btn-ghost">
           <Icon name="edit" size={13} />

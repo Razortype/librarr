@@ -898,6 +898,24 @@ body {
 }
 .action-spacer { flex: 1; }
 .btn-danger:hover { color: oklch(72% 0.16 25); border-color: oklch(60% 0.13 25); }
+.release-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.release-row {
+  padding: 8px 10px;
+  background: var(--bg);
+  border: 1px solid var(--border-faint);
+  border-radius: var(--radius-sm);
+}
+.release-title {
+  font-size: 12px; color: var(--text-2); font-weight: 450;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  margin-bottom: 5px;
+}
+.release-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.release-indexer { font-size: 11px; color: var(--text-4); }
+.release-size { font-size: 11px; color: var(--text-4); }
+.release-seeders { font-size: 11px; color: var(--text-3); }
+.releases-searching { font-size: 12px; color: var(--text-3); padding: 6px 0; }
+.releases-error { font-size: 12px; color: oklch(70% 0.16 25); padding: 6px 0; }
 
 /* ── Reduced motion ──────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
