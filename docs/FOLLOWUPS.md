@@ -37,6 +37,26 @@ Intentional technical debts and deferred work. Each item must be resolved before
 - **Constraint-violation tests** — no tests verify that DB constraints fire correctly (e.g. duplicate `(book_id, author_id, role)` in `book_authors`, invalid `status` enum value). Add at least one constraint-violation test per table before integration tests run in CI.
 - **Migration-running integration test** — CRUD smoke tests use `Base.metadata.create_all` and bypass Alembic. Add a test that runs `alembic upgrade head` + `alembic downgrade base` against a real Postgres (or temp container) in CI to catch migration-specific issues early.
 
+## Add Book modal — pre-merge items
+
+- **Replace window.alert error surface.** Add Book mutation onError currently uses window.alert. Build (or import) a toast/snackbar system and switch to it — applies to all user-facing async errors, not just Add Book.
+- **Search quality and metadata selection.** OL search returns multi-language editions ("Proyecto Hail Mary" instead of "Project Hail Mary") and odd title variants ("[Paperback] Weir, Andy" suffixes). Likely fixes: prefer English-language editions when present, prefer canonical work titles over edition titles, deduplicate near-identical results. Tracked separately from this branch.
+- **Add Book search query factory.** The useQuery in AddBookSearch is inline rather than using the queries.ts factory pattern. Acceptable due to debounce + USE_MOCK fallback shape. Extract to bookQueries.search(query) once the pattern stabilizes.
+
+## Books page — filter chips re-enable
+
+Status, Author, and Series filter chips were removed in step 12.3b because they didn't work against real API data:
+- **Status:** UI taxonomy (imported/downloading/wanted/missing) doesn't match backend (wanted/monitored/unmonitored/archived); `display_status` is a mock-only field that the real API doesn't return.
+- **Author:** dropdown options came from MOCK_BOOKS author list; real backend filter is `author_id` (UUID), not a name slug.
+- **Series:** same as Author — `series_id` is UUID, dropdown options were mock-derived.
+
+Re-enabling requires:
+- **Backend status taxonomy decision.** Either align UI labels with backend enum, or introduce a derived `display_status` that maps backend states + download progress into UI categories (likely once download tracking lands).
+- **UUID-based author/series picker UI.** Probably an autocomplete that fetches `/api/v1/author` and `/api/v1/series` — needs those list endpoints to support search.
+- **Backend list endpoint already supports `status`, `author_id`, `series_id` query params**, so the API side is mostly ready.
+
+Do not re-enable until both the picker UI and status taxonomy are settled.
+
 ## Frontend integration milestones
 
 - **`web/src/components/sidebar-empty.tsx`** — Component exists from design source port but currently unimported. Will be wired during the first-launch flow port (v0.1.x). Do not delete; intentionally pending.

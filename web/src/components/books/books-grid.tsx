@@ -35,7 +35,7 @@ export function BooksGrid() {
               coverHue={b.cover_hue}
               coverTone={b.cover_tone}
               size="md"
-              showAudioBadge={b.format === "m4b"}
+              showAudioBadge={!!b.format && b.format === "m4b"} /* mock-only field; false for live API data */
             />
             {b.display_status === "downloading" && (
               <div className="grid-progress">

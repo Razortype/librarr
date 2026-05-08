@@ -4,7 +4,7 @@ import uuid
 
 import httpx
 
-from app.schemas.metadata import AuthorStub, BookMetadata
+from app.schemas.metadata import AuthorStub, BookMetadata, EditionMetadata
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -18,10 +18,15 @@ def _title(t: str) -> dict:
     return {"lookup_type": "title_author", "title": t}
 
 
-def _book_meta(title: str, *, ol_id: str = "OL999A", author: str = "Test Author",
-               description: str | None = "A test description.",
-               publication_year: int | None = 2020,
-               confidence: float = 0.8) -> BookMetadata:
+def _book_meta(
+    title: str,
+    *,
+    ol_id: str = "OL999A",
+    author: str = "Test Author",
+    description: str | None = "A test description.",
+    publication_year: int | None = 2020,
+    confidence: float = 0.8,
+) -> BookMetadata:
     return BookMetadata(
         ol_work_id="OL12345W",
         title=title,
@@ -102,6 +107,39 @@ async def test_add_book_metadata_unavailable(
     assert body["metadata_status"] == "unresolved"
     assert len(body["warnings"]) >= 1
     assert body["book"]["effective_confidence"] == 0.0
+
+
+async def test_add_book_title_author_with_unknown_fallback(api_client: httpx.AsyncClient) -> None:
+    """Backend must accept author='Unknown', the frontend fallback for empty authors[]."""
+    r = await api_client.post(
+        "/api/v1/book",
+        json={"lookup_type": "title_author", "title": "Orphan Title", "author": "Unknown"},
+    )
+    assert r.status_code == 201
+    body = r.json()
+    assert body["book"]["title"] == "Orphan Title"
+    assert body["book"]["status"] == "wanted"
+    assert body["metadata_status"] == "resolved"
+
+
+async def test_add_book_isbn_no_work_enrichment(
+    api_client: httpx.AsyncClient, mock_metadata_service: object
+) -> None:
+    """ISBN lookup where edition has no ol_work_id skips work enrichment; book still persists."""
+    mock_metadata_service.isbn_result = EditionMetadata(  # type: ignore[attr-defined]
+        title="Edition Without Work",
+        isbn_13="9781234567890",
+        system_confidence=0.6,
+    )
+    r = await api_client.post("/api/v1/book", json={"lookup_type": "isbn", "isbn": "9781234567890"})
+    assert r.status_code == 201
+    body = r.json()
+    assert body["metadata_status"] == "partial"  # confidence 0.6 < 0.7
+    assert body["warnings"] == []
+    book = body["book"]
+    assert book["description"] is None
+    assert len(book["editions"]) == 1
+    assert book["editions"][0]["isbn_13"] == "9781234567890"
 
 
 # ---------------------------------------------------------------------------
@@ -361,9 +399,7 @@ async def test_delete_book_not_found(api_client: httpx.AsyncClient) -> None:
 # ---------------------------------------------------------------------------
 
 
-async def test_author_dedup(
-    api_client: httpx.AsyncClient, mock_metadata_service: object
-) -> None:
+async def test_author_dedup(api_client: httpx.AsyncClient, mock_metadata_service: object) -> None:
     """Two books with same OL author ID → one author row, both books linked."""
     r1 = await api_client.post("/api/v1/book", json=_title("Book One"))
     r2 = await api_client.post("/api/v1/book", json=_title("Book Two"))
@@ -390,6 +426,7 @@ async def test_add_book_with_existing_author_merges_external_ids(
 
     # Inject a synthetic external ID directly into the DB (simulates a future source)
     from app.models.author import Author as AuthorModel
+
     author_obj = await db_session.get(AuthorModel, uuid.UUID(author_id))  # type: ignore[union-attr]
     author_obj.external_ids = {**author_obj.external_ids, "synthetic_source": "S1"}
     await db_session.commit()  # type: ignore[union-attr]
@@ -522,6 +559,50 @@ async def test_command_unknown(api_client: httpx.AsyncClient) -> None:
 
 
 # ---------------------------------------------------------------------------
+# GET /api/v1/book/search
+# ---------------------------------------------------------------------------
+
+
+async def test_search_books_returns_results(
+    api_client: httpx.AsyncClient, mock_metadata_service: object
+) -> None:
+    mock_metadata_service.search_results = [  # type: ignore[attr-defined]
+        _book_meta("The Martian", ol_id="OL1A", author="Andy Weir", confidence=0.8),
+        _book_meta("Project Hail Mary", ol_id="OL2A", author="Andy Weir", confidence=0.7),
+    ]
+    r = await api_client.get("/api/v1/book/search?title=andy+weir")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["query"]["title"] == "andy weir"
+    assert body["query"]["author"] is None
+    assert body["total"] == 2
+    assert len(body["results"]) == 2
+    assert body["results"][0]["title"] == "The Martian"
+    assert body["results"][1]["title"] == "Project Hail Mary"
+    assert body["results"][0]["authors"][0]["name"] == "Andy Weir"
+
+
+async def test_search_books_requires_title(api_client: httpx.AsyncClient) -> None:
+    r = await api_client.get("/api/v1/book/search")
+    assert r.status_code == 422
+
+
+async def test_search_books_with_author(
+    api_client: httpx.AsyncClient, mock_metadata_service: object
+) -> None:
+    mock_metadata_service.search_results = [  # type: ignore[attr-defined]
+        _book_meta("The Martian", ol_id="OL1A", author="Andy Weir")
+    ]
+    r = await api_client.get("/api/v1/book/search?title=martian&author=andy+weir")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["query"]["title"] == "martian"
+    assert body["query"]["author"] == "andy weir"
+    assert body["total"] == 1
+    assert body["results"][0]["title"] == "The Martian"
+
+
+# ---------------------------------------------------------------------------
 # Full happy path (sequence)
 # ---------------------------------------------------------------------------
 
@@ -550,9 +631,7 @@ async def test_full_happy_path(api_client: httpx.AsyncClient) -> None:
     assert r.json()["user_confidence"] is None
 
     # 5. Patch metadata (bumps confidence)
-    r = await api_client.patch(
-        f"/api/v1/book/{book_id}", json={"description": "My custom desc"}
-    )
+    r = await api_client.patch(f"/api/v1/book/{book_id}", json={"description": "My custom desc"})
     assert r.json()["description"] == "My custom desc"
     assert r.json()["user_confidence"] == 1.0
 

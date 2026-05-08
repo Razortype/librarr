@@ -7,6 +7,8 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
+from app.schemas.metadata import AuthorStub
+
 # Fields on Book that represent metadata (not operational state).
 # Touching any of these in a PATCH triggers user_confidence = 1.0.
 BOOK_METADATA_FIELDS: frozenset[str] = frozenset(
@@ -116,9 +118,9 @@ class EditionInBook(BaseModel):
     isbn_10: str | None
     isbn_13: str | None
     asin: str | None
-    format: Literal[
-        "hardcover", "paperback", "ebook", "audiobook", "large_print", "mass_market"
-    ] | None
+    format: (
+        Literal["hardcover", "paperback", "ebook", "audiobook", "large_print", "mass_market"] | None
+    )
     language: str | None
     publisher: str | None
     publication_date: date | None
@@ -175,3 +177,29 @@ class BookCreateResponse(BaseModel):
     book: BookDetail
     metadata_status: Literal["resolved", "partial", "unresolved"]
     warnings: list[str]
+
+
+# ---------------------------------------------------------------------------
+# Search response models
+# ---------------------------------------------------------------------------
+
+
+class BookSearchQuery(BaseModel):
+    title: str
+    author: str | None = None
+
+
+class BookSearchResult(BaseModel):
+    ol_work_id: str | None
+    title: str
+    authors: list[AuthorStub]
+    publication_year: int | None
+    cover_url: str | None
+    series_names: list[str] | None
+    system_confidence: float
+
+
+class BookSearchResponse(BaseModel):
+    query: BookSearchQuery
+    results: list[BookSearchResult]
+    total: int

@@ -6,6 +6,7 @@ import type {
   BookListItem,
   BookListParams,
   BookPatchRequest,
+  BookSearchResponse,
   PaginatedResponse,
 } from "@/lib/types";
 
@@ -37,4 +38,6 @@ export const booksApi = {
     apiFetch<Record<string, unknown>>(`/api/v1/book/${id}?hard=${hard}`, {
       method: "DELETE",
     }),
+  search: (params: { title: string; author?: string }) =>
+    apiFetch<BookSearchResponse>(`/api/v1/book/search${buildQuery(params)}`),
 };

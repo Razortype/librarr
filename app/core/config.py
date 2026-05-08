@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     http_timeout_connect: float = 5.0
     http_timeout_read: float = 10.0
     cloud_timeout_read: float = 4.5  # leaves budget for service-layer 5s fallback
+    # CORS
+    cors_allow_origins: list[str] = ["http://localhost:5100", "http://localhost:3000"]
 
 
 settings = Settings()

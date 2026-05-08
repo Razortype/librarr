@@ -9,6 +9,7 @@ Create Date: 2026-04-26
 from __future__ import annotations
 
 import sqlalchemy as sa
+from sqlalchemy.dialects.postgresql import ENUM as PgEnum
 
 from alembic import op
 
@@ -21,30 +22,62 @@ depends_on = None
 # Enum types (Postgres native)
 # ---------------------------------------------------------------------------
 
-# create_type=False: we manage DDL explicitly via op.execute() to stay async-safe
-bookstatus = sa.Enum(
-    "wanted", "monitored", "unmonitored", "archived",
-    name="bookstatus", create_type=False,
+# PgEnum with create_type=False: we manage DDL explicitly via op.execute() DO blocks.
+# sa.Enum silently ignores create_type=False (not a supported kwarg); PgEnum stores it
+# correctly so _can_create_type() returns early and op.create_table() does not also
+# emit CREATE TYPE after the DO block already ran.
+bookstatus = PgEnum(
+    "wanted",
+    "monitored",
+    "unmonitored",
+    "archived",
+    name="bookstatus",
+    create_type=False,
 )
-authorrole = sa.Enum(
-    "primary", "co_author", "contributor", "translator", "illustrator",
-    name="authorrole", create_type=False,
+authorrole = PgEnum(
+    "primary",
+    "co_author",
+    "contributor",
+    "translator",
+    "illustrator",
+    name="authorrole",
+    create_type=False,
 )
-editionformat = sa.Enum(
-    "hardcover", "paperback", "ebook", "audiobook", "large_print", "mass_market",
-    name="editionformat", create_type=False,
+editionformat = PgEnum(
+    "hardcover",
+    "paperback",
+    "ebook",
+    "audiobook",
+    "large_print",
+    "mass_market",
+    name="editionformat",
+    create_type=False,
 )
-downloadstatus = sa.Enum(
-    "queued", "searching", "downloading", "completed", "failed", "imported", "cancelled",
-    name="downloadstatus", create_type=False,
+downloadstatus = PgEnum(
+    "queued",
+    "searching",
+    "downloading",
+    "completed",
+    "failed",
+    "imported",
+    "cancelled",
+    name="downloadstatus",
+    create_type=False,
 )
-integrationtype = sa.Enum(
-    "prowlarr", "qbittorrent", "calibre",
-    name="integrationtype", create_type=False,
+integrationtype = PgEnum(
+    "prowlarr",
+    "qbittorrent",
+    "calibre",
+    name="integrationtype",
+    create_type=False,
 )
-cacheentitytype = sa.Enum(
-    "author", "book", "edition", "series",
-    name="cacheentitytype", create_type=False,
+cacheentitytype = PgEnum(
+    "author",
+    "book",
+    "edition",
+    "series",
+    name="cacheentitytype",
+    create_type=False,
 )
 
 
@@ -105,10 +138,15 @@ def upgrade() -> None:
     )
 
     # -- books ----------------------------------------------------------------
-    op.execute(sa.text(
-        "CREATE TYPE IF NOT EXISTS bookstatus AS ENUM"
-        " ('wanted', 'monitored', 'unmonitored', 'archived')"
-    ))
+    op.execute(
+        sa.text("""
+        DO $$ BEGIN
+            CREATE TYPE bookstatus AS ENUM ('wanted', 'monitored', 'unmonitored', 'archived');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+    """)
+    )
     op.create_table(
         "books",
         sa.Column("id", sa.UUID(), nullable=False),
@@ -145,10 +183,15 @@ def upgrade() -> None:
     )
 
     # -- book_authors ---------------------------------------------------------
-    op.execute(sa.text(
-        "CREATE TYPE IF NOT EXISTS authorrole AS ENUM"
-        " ('primary', 'co_author', 'contributor', 'translator', 'illustrator')"
-    ))
+    op.execute(
+        sa.text("""
+        DO $$ BEGIN
+            CREATE TYPE authorrole AS ENUM ('primary', 'co_author', 'contributor', 'translator', 'illustrator');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+    """)
+    )
     op.create_table(
         "book_authors",
         sa.Column("id", sa.UUID(), nullable=False),
@@ -163,10 +206,15 @@ def upgrade() -> None:
     )
 
     # -- editions -------------------------------------------------------------
-    op.execute(sa.text(
-        "CREATE TYPE IF NOT EXISTS editionformat AS ENUM"
-        " ('hardcover', 'paperback', 'ebook', 'audiobook', 'large_print', 'mass_market')"
-    ))
+    op.execute(
+        sa.text("""
+        DO $$ BEGIN
+            CREATE TYPE editionformat AS ENUM ('hardcover', 'paperback', 'ebook', 'audiobook', 'large_print', 'mass_market');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+    """)
+    )
     op.create_table(
         "editions",
         sa.Column("id", sa.UUID(), nullable=False),
@@ -206,10 +254,15 @@ def upgrade() -> None:
     op.create_index("ix_editions_asin", "editions", ["asin"])
 
     # -- downloads ------------------------------------------------------------
-    op.execute(sa.text(
-        "CREATE TYPE IF NOT EXISTS downloadstatus AS ENUM"
-        " ('queued', 'searching', 'downloading', 'completed', 'failed', 'imported', 'cancelled')"
-    ))
+    op.execute(
+        sa.text("""
+        DO $$ BEGIN
+            CREATE TYPE downloadstatus AS ENUM ('queued', 'searching', 'downloading', 'completed', 'failed', 'imported', 'cancelled');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+    """)
+    )
     op.create_table(
         "downloads",
         sa.Column("id", sa.UUID(), nullable=False),
@@ -288,9 +341,15 @@ def upgrade() -> None:
     )
 
     # -- integration_configs --------------------------------------------------
-    op.execute(sa.text(
-        "CREATE TYPE IF NOT EXISTS integrationtype AS ENUM ('prowlarr', 'qbittorrent', 'calibre')"
-    ))
+    op.execute(
+        sa.text("""
+        DO $$ BEGIN
+            CREATE TYPE integrationtype AS ENUM ('prowlarr', 'qbittorrent', 'calibre');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+    """)
+    )
     op.create_table(
         "integration_configs",
         sa.Column("id", sa.UUID(), nullable=False),
@@ -316,9 +375,15 @@ def upgrade() -> None:
     )
 
     # -- metadata_cache -------------------------------------------------------
-    op.execute(sa.text(
-        "CREATE TYPE IF NOT EXISTS cacheentitytype AS ENUM ('author', 'book', 'edition', 'series')"
-    ))
+    op.execute(
+        sa.text("""
+        DO $$ BEGIN
+            CREATE TYPE cacheentitytype AS ENUM ('author', 'book', 'edition', 'series');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+    """)
+    )
     op.create_table(
         "metadata_cache",
         sa.Column("external_id", sa.String(), nullable=False),

@@ -14,6 +14,9 @@ from app.schemas.book import (
     BookDetail,
     BookListItem,
     BookPatchRequest,
+    BookSearchQuery,
+    BookSearchResponse,
+    BookSearchResult,
 )
 from app.schemas.common import PaginatedResponse
 from app.services.book_service import BookService
@@ -64,6 +67,31 @@ async def list_books(
         sort_dir=sort_dir,
         limit=limit,
         offset=offset,
+    )
+
+
+@router.get("/search", response_model=BookSearchResponse)
+async def search_books(
+    title: Annotated[str, Query(min_length=1, max_length=200)],
+    meta: Annotated[MetadataService, Depends(get_metadata_service)],
+    author: Annotated[str | None, Query(max_length=200)] = None,
+) -> BookSearchResponse:
+    results = await meta.search_books(title=title, author=author)
+    return BookSearchResponse(
+        query=BookSearchQuery(title=title, author=author),
+        results=[
+            BookSearchResult(
+                ol_work_id=r.ol_work_id,
+                title=r.title,
+                authors=r.authors,
+                publication_year=r.publication_year,
+                cover_url=r.cover_url,
+                series_names=r.series_names,
+                system_confidence=r.system_confidence,
+            )
+            for r in results
+        ],
+        total=len(results),
     )
 
 

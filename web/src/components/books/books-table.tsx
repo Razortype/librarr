@@ -113,7 +113,7 @@ export function BooksTable() {
                   coverHue={b.cover_hue}
                   coverTone={b.cover_tone}
                   size="sm"
-                  showAudioBadge={b.format === "m4b"}
+                  showAudioBadge={!!b.format && b.format === "m4b"} /* mock-only field; false for live API data */
                 />
               </td>
 
@@ -166,7 +166,8 @@ export function BooksTable() {
                 )}
               </td>
 
-              <td className="td td-added mono">{fmtDate(b.added_at)}</td>
+              {/* mock-only field; falls back to updated_at for live API data */}
+              <td className="td td-added mono">{fmtDate(b.added_at ?? b.updated_at)}</td>
 
               <td className="td td-actions">
                 <span className="row-more">

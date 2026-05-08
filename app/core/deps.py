@@ -20,15 +20,13 @@ async def get_metadata_service() -> AsyncGenerator[MetadataService]:
         httpx.AsyncClient(
             base_url=settings.openlibrary_base_url,
             timeout=httpx.Timeout(
-                connect=settings.http_timeout_connect,
-                read=settings.http_timeout_read,
+                settings.http_timeout_read, connect=settings.http_timeout_connect
             ),
         ) as ol_http,
         httpx.AsyncClient(
             base_url=settings.librarr_cloud_url,
             timeout=httpx.Timeout(
-                connect=settings.http_timeout_connect,
-                read=settings.cloud_timeout_read,
+                settings.cloud_timeout_read, connect=settings.http_timeout_connect
             ),
         ) as cloud_http,
     ):

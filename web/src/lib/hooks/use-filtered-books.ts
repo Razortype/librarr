@@ -2,13 +2,24 @@
 
 import { useSearchParams } from "next/navigation";
 import { useMemo } from "react";
-import { MOCK_BOOKS } from "@/lib/mock/books";
-import type { MockBook } from "@/lib/mock/books";
+import { useQuery } from "@tanstack/react-query";
+import { bookQueries } from "@/lib/queries";
+import type { BookListItem } from "@/lib/types";
 import { slugify } from "@/lib/utils";
 
 export type BookView = "table" | "grid";
 export type SortCol = "title" | "author" | "status" | "added";
 export type SortDir = "asc" | "desc";
+
+// Extends BookListItem with optional fields from the mock display layer.
+// The real API does not return these; consumers render gracefully when absent.
+export type DisplayBook = BookListItem & {
+  subtitle?: string | null;
+  format?: string;
+  size?: string;
+  added_at?: string;
+  series_total?: number | null;
+};
 
 export function fmtDate(s: string | undefined | null): string {
   if (!s) return "—";
@@ -48,8 +59,10 @@ export function useFilteredBooks() {
   const authorFilter = searchParams.get("author") ?? undefined;
   const seriesFilter = searchParams.get("series") ?? undefined;
 
-  const filteredBooks = useMemo<MockBook[]>(() => {
-    let books: MockBook[] = [...MOCK_BOOKS];
+  const { data, isLoading, isError, error } = useQuery(bookQueries.list());
+
+  const filteredBooks = useMemo<DisplayBook[]>(() => {
+    let books: DisplayBook[] = [...((data?.items ?? []) as DisplayBook[])];
 
     if (statusFilter) {
       books = books.filter((b) => b.display_status === statusFilter);
@@ -83,8 +96,8 @@ export function useFilteredBooks() {
           bv = b.display_status ?? "";
           break;
         case "added":
-          av = a.added_at ?? "";
-          bv = b.added_at ?? "";
+          av = a.updated_at ?? "";
+          bv = b.updated_at ?? "";
           break;
       }
       const cmp = av < bv ? -1 : av > bv ? 1 : 0;
@@ -92,20 +105,23 @@ export function useFilteredBooks() {
     });
 
     return books;
-  }, [statusFilter, authorFilter, seriesFilter, sortCol, sortDir]);
+  }, [data, statusFilter, authorFilter, seriesFilter, sortCol, sortDir]);
 
   const selectedBook =
     selectedId != null
-      ? MOCK_BOOKS.find((b) => b.id === selectedId)
+      ? ((data?.items ?? []).find((b) => b.id === selectedId) as DisplayBook | undefined)
       : undefined;
 
   return {
-    allBooks: MOCK_BOOKS,
+    allBooks: (data?.items ?? []) as DisplayBook[],
     filteredBooks,
     selectedBook,
     selectedId,
     view,
     sort: { col: sortCol, dir: sortDir },
     filters: { status: statusFilter, author: authorFilter, series: seriesFilter },
+    isLoading,
+    isError,
+    error,
   };
 }

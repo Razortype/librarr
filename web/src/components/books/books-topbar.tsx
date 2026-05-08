@@ -2,55 +2,17 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { Icon } from "@/components/icon";
-import { FilterChip } from "./filter-chip";
-import { MOCK_BOOKS } from "@/lib/mock/books";
-import { slugify } from "@/lib/utils";
 import { useFilteredBooks } from "@/lib/hooks/use-filtered-books";
 
-const STATUS_OPTIONS = [
-  { label: "Imported", value: "imported" },
-  { label: "Downloading", value: "downloading" },
-  { label: "Wanted", value: "wanted" },
-  { label: "Missing", value: "missing" },
-];
 
-// Module-level constants — computed once at load, MOCK_BOOKS is static
-const AUTHOR_OPTIONS = Array.from(
-  new Map(
-    MOCK_BOOKS.filter((b) => b.primary_author).map((b) => [
-      slugify(b.primary_author!.canonical_name),
-      {
-        label: b.primary_author!.canonical_name,
-        value: slugify(b.primary_author!.canonical_name),
-      },
-    ])
-  ).values()
-);
+interface BooksTopbarProps {
+  onAddBookClick: () => void;
+}
 
-const SERIES_OPTIONS = Array.from(
-  new Map(
-    MOCK_BOOKS.filter((b) => b.series_name).map((b) => [
-      slugify(b.series_name!),
-      { label: b.series_name!, value: slugify(b.series_name!) },
-    ])
-  ).values()
-);
-
-export function BooksTopbar() {
+export function BooksTopbar({ onAddBookClick }: BooksTopbarProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { filteredBooks, view, filters } = useFilteredBooks();
-  const { status: statusFilter, author: authorFilter, series: seriesFilter } = filters;
-
-  const activeStatusLabel = STATUS_OPTIONS.find(
-    (o) => o.value === statusFilter,
-  )?.label;
-  const activeAuthorLabel = AUTHOR_OPTIONS.find(
-    (o) => o.value === authorFilter,
-  )?.label;
-  const activeSeriesLabel = SERIES_OPTIONS.find(
-    (o) => o.value === seriesFilter,
-  )?.label;
+  const { allBooks, view } = useFilteredBooks();
 
   function setParam(key: string, value: string | undefined) {
     const params = new URLSearchParams(searchParams.toString());
@@ -90,33 +52,9 @@ export function BooksTopbar() {
         <div className="page-title">
           <h1>Books</h1>
           <span className="page-count">
-            <span className="count-num">{filteredBooks.length}</span>
-            <span className="count-of">of {MOCK_BOOKS.length}</span>
+            <span className="count-num">{allBooks.length}</span>
+            <span className="count-of">books</span>
           </span>
-        </div>
-
-        <div className="filters">
-          <FilterChip
-            label="Status"
-            active={!!statusFilter}
-            activeLabel={activeStatusLabel}
-            options={STATUS_OPTIONS}
-            onSelect={(v) => setParam("status", v)}
-          />
-          <FilterChip
-            label="Author"
-            active={!!authorFilter}
-            activeLabel={activeAuthorLabel}
-            options={AUTHOR_OPTIONS}
-            onSelect={(v) => setParam("author", v)}
-          />
-          <FilterChip
-            label="Series"
-            active={!!seriesFilter}
-            activeLabel={activeSeriesLabel}
-            options={SERIES_OPTIONS}
-            onSelect={(v) => setParam("series", v)}
-          />
         </div>
 
         <div className="topbar-spacer" />
@@ -143,11 +81,9 @@ export function BooksTopbar() {
         </div>
 
         <button
-          disabled
+          type="button"
           className="btn btn-primary"
-          onClick={() => {
-            // TODO: open Add Book modal
-          }}
+          onClick={onAddBookClick}
         >
           <Icon name="plus" size={14} />
           <span>Add Book</span>

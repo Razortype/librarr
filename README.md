@@ -51,7 +51,7 @@ See [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md). Short version: FastAPI backe
 
 ## Development
 
-This project is built with AI-assisted coding (Claude Code). All architecture, design decisions, and code review are mine. PRs are welcome but please read [CONTRIBUTING.md](./CONTRIBUTING.md) first.
+See [`docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md) for local development setup.
 
 ## Follow-ups
 

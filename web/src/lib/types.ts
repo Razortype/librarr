@@ -87,6 +87,11 @@ export interface Series {
 
 // ── Author ────────────────────────────────────────────────────────────────────
 
+export interface AuthorStub {
+  ol_id: string | null;
+  name: string;
+}
+
 export interface AuthorRef {
   id: string;
   canonical_name: string;
@@ -186,6 +191,61 @@ export interface BookCreateResponse {
   book: BookDetail;
   metadata_status: "resolved" | "partial" | "unresolved";
   warnings: string[];
+}
+
+export interface BookSearchQuery {
+  title: string;
+  author: string | null;
+}
+
+export interface BookSearchResult {
+  ol_work_id: string | null;
+  title: string;
+  authors: AuthorStub[];
+  publication_year: number | null;
+  cover_url: string | null;
+  series_names: string[] | null;
+  system_confidence: number;
+}
+
+export interface BookSearchResponse {
+  query: BookSearchQuery;
+  results: BookSearchResult[];
+  total: number;
+}
+
+/**
+ * UI-side shape for Add Book modal results. Wraps BookSearchResult fields
+ * plus mock-only enrichments (formats, hasAudio, latencyMs) and UI-local
+ * state (per-row state machine, selection). When wired to the real API,
+ * an adapter populates this from BookSearchResult and reasonable defaults
+ * for the UI-only fields.
+ */
+export interface AddBookDisplayResult {
+  id: string;                          // stable key (slug or ol_work_id)
+  title: string;
+  author: string;                      // flat display string
+  year: number | null;
+  editions?: number;                   // mock-only display detail
+  isbn?: string | null;                // mock-only display detail
+  pages?: number;                      // mock-only display detail
+  note?: string;                       // e.g. 'short story' (replaces editions+isbn)
+  hasAudio: boolean;
+  confidence: 'high' | 'medium' | 'low';
+  source: string;                      // 'cloud' | 'open library' | 'google books'
+  latencyMs: number;
+  formats: string[];                   // ['EPUB', 'MOBI']
+  coverHue: number;                    // 0–360
+  coverTone: CoverTone;
+  coverInitials?: string;              // optional override; else derive from title
+  state: 'idle' | 'adding' | 'added';  // UI-local state
+  selected?: boolean;                  // UI-local selection
+}
+
+export interface AddBookSource {
+  id: 'cloud' | 'openlib' | 'google';
+  label: string;
+  on: boolean;
 }
 
 export interface BookPatchRequest {
