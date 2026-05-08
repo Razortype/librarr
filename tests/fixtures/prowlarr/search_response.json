@@ -1,0 +1,30 @@
+[
+  {
+    "guid": "https://indexer.example/release/1234",
+    "title": "Project.Hail.Mary.epub",
+    "indexerId": 1,
+    "indexer": "MyIndexer",
+    "size": 2097152,
+    "publishDate": "2023-08-15T14:30:00Z",
+    "downloadUrl": "https://indexer.example/download/1234.torrent",
+    "infoUrl": "https://indexer.example/details/1234",
+    "seeders": 42,
+    "leechers": 5,
+    "protocol": "torrent",
+    "categories": [{"id": 7020, "name": "Books/EBook"}]
+  },
+  {
+    "guid": "nzb://usenet.example/articles/5678",
+    "title": "Andy.Weir.Project.Hail.Mary.2021.epub-NFO",
+    "indexerId": 2,
+    "indexer": "UsenetIndexer",
+    "size": 1048576,
+    "publishDate": "2023-06-01T09:00:00Z",
+    "downloadUrl": "https://usenet.example/nzb/5678.nzb",
+    "infoUrl": null,
+    "seeders": null,
+    "leechers": null,
+    "protocol": "usenet",
+    "categories": [{"id": 7020, "name": "Books/EBook"}]
+  }
+]

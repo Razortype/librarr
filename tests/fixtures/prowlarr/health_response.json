@@ -1,0 +1,23 @@
+{
+  "version": "1.20.1.4710",
+  "appName": "Prowlarr",
+  "instanceName": "Prowlarr",
+  "branch": "master",
+  "authentication": "none",
+  "sqliteVersion": "3.43.2",
+  "urlBase": "",
+  "runtimeVersion": "6.0.24",
+  "runtimeName": ".NET",
+  "startupPath": "/app/prowlarr",
+  "appData": "/config",
+  "osName": "ubuntu",
+  "osVersion": "22.04",
+  "isMonoRuntime": false,
+  "isMono": false,
+  "isLinux": true,
+  "isOsx": false,
+  "isWindows": false,
+  "isDocker": true,
+  "mode": "console",
+  "environmentName": "Production"
+}
