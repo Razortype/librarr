@@ -4,8 +4,12 @@ import { useSearchParams } from "next/navigation";
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { bookQueries } from "@/lib/queries";
-import type { BookListItem } from "@/lib/types";
+import type { BookListItem, BookStatus } from "@/lib/types";
 import { slugify } from "@/lib/utils";
+
+interface UseFilteredBooksOptions {
+  lockedApiStatus?: BookStatus;
+}
 
 export type BookView = "table" | "grid";
 export type SortCol = "title" | "author" | "status" | "added";
@@ -37,7 +41,8 @@ export function fmtDate(s: string | undefined | null): string {
   });
 }
 
-export function useFilteredBooks() {
+export function useFilteredBooks(opts: UseFilteredBooksOptions = {}) {
+  const { lockedApiStatus } = opts;
   const searchParams = useSearchParams();
 
   const selectedId = searchParams.get("selected") ?? undefined;
@@ -59,12 +64,14 @@ export function useFilteredBooks() {
   const authorFilter = searchParams.get("author") ?? undefined;
   const seriesFilter = searchParams.get("series") ?? undefined;
 
-  const { data, isLoading, isError, error } = useQuery(bookQueries.list());
+  const { data, isLoading, isError, error } = useQuery(
+    bookQueries.list(lockedApiStatus ? { status: lockedApiStatus } : undefined),
+  );
 
   const filteredBooks = useMemo<DisplayBook[]>(() => {
     let books: DisplayBook[] = [...((data?.items ?? []) as DisplayBook[])];
 
-    if (statusFilter) {
+    if (statusFilter && !lockedApiStatus) {
       books = books.filter((b) => b.display_status === statusFilter);
     }
     if (authorFilter) {
@@ -105,7 +112,7 @@ export function useFilteredBooks() {
     });
 
     return books;
-  }, [data, statusFilter, authorFilter, seriesFilter, sortCol, sortDir]);
+  }, [data, statusFilter, lockedApiStatus, authorFilter, seriesFilter, sortCol, sortDir]);
 
   const selectedBook =
     selectedId != null

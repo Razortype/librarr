@@ -1,7 +1,15 @@
-export default function WantedPage() {
+import { Suspense } from "react";
+import { WantedPageClient } from "@/components/wanted/wanted-page-client";
+
+export default async function WantedPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  await searchParams;
   return (
-    <div className="flex h-full items-center justify-center">
-      <p className="text-text-3 text-sm font-mono">Wanted — coming in v0.1.x</p>
-    </div>
+    <Suspense fallback={null}>
+      <WantedPageClient />
+    </Suspense>
   );
 }

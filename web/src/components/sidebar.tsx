@@ -43,13 +43,14 @@ export function Sidebar() {
   const activeId = pathnameToId(pathname);
 
   const { data: booksData } = useQuery(bookQueries.list({ limit: 1 }));
+  const { data: wantedData } = useQuery(bookQueries.list({ status: "wanted", limit: 1 }));
   const { data: queueData } = useQuery(queueQueries.list());
   const { data: systemData } = useQuery(systemQueries.status());
 
   const booksCount = USE_MOCK ? MOCK_BOOK_COUNT : (booksData?.total ?? "—");
   const queueCount =
     queueData?.filter((i) => i.state === "downloading").length ?? "—";
-  const wantedCount = USE_MOCK ? MOCK_WANTED_COUNT : "—";
+  const wantedCount = USE_MOCK ? MOCK_WANTED_COUNT : (wantedData?.total ?? "—");
 
   const groups: NavGroup[] = [
     {
