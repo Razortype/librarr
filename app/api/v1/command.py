@@ -18,7 +18,8 @@ from app.services.metadata import MetadataService
 router = APIRouter()
 logger = structlog.get_logger(__name__)
 
-_STUB_COMMANDS = {"BookSearch", "RescanLibrary"}
+# BookSearch moved to POST /api/v1/book/{book_id}/search
+_STUB_COMMANDS = {"RescanLibrary"}
 
 
 def _book_service(meta: Annotated[MetadataService, Depends(get_metadata_service)]) -> BookService:
@@ -76,7 +77,7 @@ async def run_command(
             body=request.body,
         )
 
-    known = "RefreshBook, BookSearch, RescanLibrary"
+    known = "RefreshBook, RescanLibrary"
     raise HTTPException(
         status_code=422,
         detail=f"Unknown command: {request.name!r}. Known commands: {known}",

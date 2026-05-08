@@ -537,17 +537,12 @@ async def test_command_refresh_book_no_changes(api_client: httpx.AsyncClient) ->
     assert r_get.json()["system_confidence"] == original_conf
 
 
-async def test_command_book_search_stub(api_client: httpx.AsyncClient) -> None:
+async def test_command_book_search_unknown(api_client: httpx.AsyncClient) -> None:
     r = await api_client.post(
         "/api/v1/command",
         json={"name": "BookSearch", "body": {}},
     )
-    assert r.status_code == 201
-    body = r.json()
-    assert body["status"] == "queued"
-    assert body["name"] == "BookSearch"
-    assert body["started_at"] is None
-    assert body["ended_at"] is None
+    assert r.status_code == 422
 
 
 async def test_command_unknown(api_client: httpx.AsyncClient) -> None:

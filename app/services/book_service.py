@@ -12,6 +12,7 @@ from app.core.exceptions import (
     BookNotFoundError,
     DuplicateBookError,
 )
+from app.integrations.prowlarr.client import ProwlarrClient
 from app.repositories.author import AuthorRepository
 from app.repositories.book import AuthorWithRole, BookRepository
 from app.repositories.edition import EditionRepository
@@ -31,6 +32,7 @@ from app.schemas.book import (
     TitleAuthorLookup,
 )
 from app.schemas.common import PaginatedResponse
+from app.schemas.prowlarr import ProwlarrRelease
 
 if TYPE_CHECKING:
     from app.models.author import Author
@@ -109,8 +111,7 @@ class BookService:
                         author_stubs = work.authors
             else:
                 warnings.append(
-                    f"No metadata found for ISBN {request.isbn}. "
-                    "Book added with minimal data."
+                    f"No metadata found for ISBN {request.isbn}. Book added with minimal data."
                 )
                 book_title = request.isbn
                 edition_data = {
@@ -120,9 +121,7 @@ class BookService:
                 }
 
         else:  # TitleAuthorLookup
-            results = await self._meta.search_books(
-                title=request.title, author=request.author
-            )
+            results = await self._meta.search_books(title=request.title, author=request.author)
             if results:
                 best = results[0]
                 book_title = best.title
@@ -137,8 +136,7 @@ class BookService:
                 metadata_status = "resolved" if best.system_confidence >= 0.7 else "partial"
             else:
                 warnings.append(
-                    "No metadata found for this title/author. "
-                    "Book added with minimal data."
+                    "No metadata found for this title/author. Book added with minimal data."
                 )
 
         # Persist within a single transaction
@@ -306,6 +304,25 @@ class BookService:
             await db.commit()
 
         return await self._build_book_detail(book, books, db)
+
+    # ------------------------------------------------------------------
+    # Search releases (Prowlarr)
+    # ------------------------------------------------------------------
+
+    async def search_releases(
+        self, book_id: uuid.UUID, db: AsyncSession, prowlarr: ProwlarrClient
+    ) -> list[ProwlarrRelease]:
+        books = BookRepository(db)
+        book = await books.get(book_id)
+        if book is None:
+            raise BookNotFoundError(str(book_id))
+
+        author_rows = await books.get_authors_for_book(book_id)
+        query = book.title
+        if author_rows:
+            query = f"{book.title} {author_rows[0].author.canonical_name}"
+
+        return await prowlarr.search(query)
 
     # ------------------------------------------------------------------
     # Author detail
