@@ -12,6 +12,7 @@ from tenacity import (
 
 from app.integrations.exceptions import (
     ProwlarrAuthError,
+    ProwlarrDownloadError,
     ProwlarrError,
     ProwlarrNotFoundError,
     ProwlarrRateLimitError,
@@ -104,6 +105,36 @@ class ProwlarrClient:
             )
             for r in raws
         ]
+
+    async def download_release(self, url: str) -> bytes | str:
+        """Fetch a release download URL.
+
+        Returns .torrent bytes on HTTP 200, or a magnet URI string when Prowlarr
+        redirects to a magnet: link.  Does not follow redirects so the magnet
+        case is detectable.
+
+        Raises:
+            ProwlarrTimeoutError: on network timeout.
+            ProwlarrDownloadError: on any non-torrent / non-magnet response.
+        """
+        try:
+            response = await self._http.get(url, follow_redirects=False)
+        except (httpx.TimeoutException, httpx.ConnectError) as exc:
+            logger.warning("prowlarr_download_timeout", url=url, error=str(exc))
+            raise ProwlarrTimeoutError(str(exc)) from exc
+
+        if response.is_redirect:
+            location = response.headers.get("location", "")
+            if location.startswith("magnet:"):
+                return location
+            raise ProwlarrDownloadError(f"Unexpected redirect target: {location[:100]}")
+
+        self._raise_for_status(response)
+
+        if response.status_code == 200:
+            return response.content
+
+        raise ProwlarrDownloadError(f"Unexpected status from download URL: {response.status_code}")
 
     @retry(
         retry=retry_if_exception_type(_RETRYABLE),

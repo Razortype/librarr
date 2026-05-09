@@ -101,6 +101,10 @@ class ProwlarrNotConfiguredError(ProwlarrError):
     """Prowlarr is not configured or has been disabled."""
 
 
+class ProwlarrDownloadError(ProwlarrError):
+    """Download URL fetch failed or returned unexpected content."""
+
+
 class QBittorrentError(IntegrationError):
     """Base for qBittorrent errors."""
 
@@ -123,3 +127,15 @@ class QBittorrentServerError(QBittorrentError):
 
 class QBittorrentTimeoutError(QBittorrentError):
     """Timeout connecting to or reading from qBittorrent."""
+
+
+class QBittorrentNotConfiguredError(QBittorrentError):
+    """qBittorrent is not configured or has been disabled."""
+
+
+class QBittorrentAddError(QBittorrentError):
+    """qBittorrent refused the torrent (non-retryable add failure)."""
+
+
+class QBittorrentHashLookupError(QBittorrentError):
+    """Torrent hash not found in qBittorrent after add."""

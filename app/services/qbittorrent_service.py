@@ -13,6 +13,7 @@ from app.integrations.exceptions import (
     QBittorrentAuthError,
     QBittorrentError,
     QBittorrentForbiddenError,
+    QBittorrentNotConfiguredError,
     QBittorrentTimeoutError,
 )
 from app.integrations.qbittorrent.client import QBittorrentClient
@@ -44,6 +45,27 @@ async def _build_client(
         ),
     ) as http:
         yield QBittorrentClient(http, username=username, password=password)
+
+
+@contextlib.asynccontextmanager
+async def get_active_client(session: AsyncSession) -> AsyncGenerator[QBittorrentClient]:
+    """Yield a QBittorrentClient built from the persisted DB config.
+
+    Raises QBittorrentNotConfiguredError if no enabled config exists.
+    """
+    repo = IntegrationConfigRepository(session)
+    row = await repo.get_by_type(_TYPE)
+    if row is None or not row.enabled:
+        raise QBittorrentNotConfiguredError("qBittorrent is not configured or is disabled")
+    cfg = decrypt_config(row.config)
+    async with _build_client(
+        cfg["host"],
+        cfg["port"],
+        cfg["username"],
+        cfg["password"],
+        cfg.get("use_https", False),
+    ) as client:
+        yield client
 
 
 async def test_connection(

@@ -121,14 +121,17 @@ class QBittorrentClient:
         urls: str,
         *,
         category: str | None = None,
+        tags: str | None = None,
         save_path: str | None = None,
     ) -> None:
-        """Add one or more torrents by URL to qBittorrent."""
+        """Add one or more torrents by URL or magnet to qBittorrent."""
         await self._ensure_authenticated()
         url = "/api/v2/torrents/add"
         data: dict[str, str] = {"urls": urls}
         if category is not None:
             data["category"] = category
+        if tags is not None:
+            data["tags"] = tags
         if save_path is not None:
             data["savepath"] = save_path
 
@@ -142,3 +145,63 @@ class QBittorrentClient:
 
         if response.text.strip() == "Fails.":
             raise QBittorrentError("qBittorrent: add_torrent failed")
+
+    @retry(
+        retry=retry_if_exception_type(_RETRYABLE),
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=0.5, min=0.5, max=4) + wait_random(0, 0.5),
+        reraise=True,
+    )
+    async def add_torrent_file(
+        self,
+        content: bytes,
+        *,
+        category: str | None = None,
+        tags: str | None = None,
+    ) -> None:
+        """Add a torrent by uploading raw .torrent file bytes to qBittorrent."""
+        await self._ensure_authenticated()
+        url = "/api/v2/torrents/add"
+        data: dict[str, str] = {}
+        if category is not None:
+            data["category"] = category
+        if tags is not None:
+            data["tags"] = tags
+
+        try:
+            response = await self._http.post(
+                url,
+                data=data,
+                files={"torrents": ("release.torrent", content, "application/x-bittorrent")},
+            )
+        except (httpx.TimeoutException, httpx.ConnectError) as exc:
+            logger.warning("qbittorrent_timeout", url=url, error=str(exc))
+            raise QBittorrentTimeoutError(str(exc)) from exc
+
+        self._raise_for_status(response)
+
+        if response.text.strip() == "Fails.":
+            raise QBittorrentError("qBittorrent: add_torrent_file failed")
+
+    @retry(
+        retry=retry_if_exception_type(_RETRYABLE),
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=0.5, min=0.5, max=4) + wait_random(0, 0.5),
+        reraise=True,
+    )
+    async def get_torrents(self, *, tag: str | None = None) -> list[dict]:
+        """Return torrent info list, optionally filtered by tag."""
+        await self._ensure_authenticated()
+        url = "/api/v2/torrents/info"
+        params: dict[str, str] = {}
+        if tag is not None:
+            params["tag"] = tag
+
+        try:
+            response = await self._http.get(url, params=params)
+        except (httpx.TimeoutException, httpx.ConnectError) as exc:
+            logger.warning("qbittorrent_timeout", url=url, error=str(exc))
+            raise QBittorrentTimeoutError(str(exc)) from exc
+
+        self._raise_for_status(response)
+        return response.json()

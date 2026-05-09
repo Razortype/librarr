@@ -13,6 +13,7 @@ from app.models.base import Base, ConfidenceMixin, uuid7_pk
 if TYPE_CHECKING:
     from app.models.author import Author
     from app.models.edition import Edition
+    from app.models.grab import Grab
     from app.models.series import Series
 
 
@@ -38,6 +39,7 @@ class Book(ConfidenceMixin, Base):
             "monitored",
             "unmonitored",
             "archived",
+            "grabbed",
             name="bookstatus",
             native_enum=True,
         ),
@@ -62,6 +64,7 @@ class Book(ConfidenceMixin, Base):
         back_populates="books",
     )
     editions: Mapped[list[Edition]] = relationship("Edition", back_populates="book")
+    grabs: Mapped[list[Grab]] = relationship("Grab", back_populates="book")
 
     def __repr__(self) -> str:
         return f"<Book id={self.id} title={self.title!r}>"
