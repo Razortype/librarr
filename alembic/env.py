@@ -15,6 +15,7 @@ import app.models.author  # noqa: F401
 import app.models.book  # noqa: F401
 import app.models.download  # noqa: F401
 import app.models.edition  # noqa: F401
+import app.models.grab  # noqa: F401
 import app.models.integration_config  # noqa: F401
 import app.models.metadata_cache  # noqa: F401
 import app.models.quality_profile  # noqa: F401
