@@ -5,8 +5,15 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
+import app.services.prowlarr_service as prowlarr_service
 import app.services.qbittorrent_service as qbt_service
 from app.core.db import get_db
+from app.schemas.prowlarr import (
+    ProwlarrConfigIn,
+    ProwlarrConfigOut,
+    ProwlarrTestRequest,
+    ProwlarrTestResult,
+)
 from app.schemas.qbittorrent import (
     QBittorrentConfigIn,
     QBittorrentConfigOut,
@@ -43,3 +50,25 @@ async def test_qbittorrent(body: QBittorrentTestRequest) -> QBittorrentTestResul
     return await qbt_service.test_connection(
         body.host, body.port, body.username, body.password, body.use_https
     )
+
+
+@router.get("/prowlarr", response_model=ProwlarrConfigOut | None)
+async def get_prowlarr(session: _DB) -> ProwlarrConfigOut | None:
+    return await prowlarr_service.get_config(session)
+
+
+@router.put("/prowlarr", response_model=ProwlarrConfigOut)
+async def upsert_prowlarr(body: ProwlarrConfigIn, session: _DB) -> ProwlarrConfigOut:
+    return await prowlarr_service.upsert_config(session, body)
+
+
+@router.delete("/prowlarr", status_code=204)
+async def delete_prowlarr(session: _DB) -> None:
+    deleted = await prowlarr_service.delete_config(session)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Prowlarr not configured")
+
+
+@router.post("/prowlarr/test", response_model=ProwlarrTestResult)
+async def test_prowlarr(body: ProwlarrTestRequest) -> ProwlarrTestResult:
+    return await prowlarr_service.test_connection(body.base_url, body.api_key)
