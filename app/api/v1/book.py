@@ -10,6 +10,7 @@ from app.core.db import get_db
 from app.core.deps import get_metadata_service, get_prowlarr_client
 from app.integrations.exceptions import (
     ProwlarrAuthError,
+    ProwlarrNotConfiguredError,
     ProwlarrRateLimitError,
     ProwlarrServerError,
     ProwlarrTimeoutError,
@@ -27,6 +28,8 @@ from app.schemas.book import (
 )
 from app.schemas.common import PaginatedResponse
 from app.schemas.prowlarr import ProwlarrRelease
+from app.schemas.release import ReleaseSearchResponse
+from app.services import release_search_service
 from app.services.book_service import BookService
 from app.services.metadata import MetadataService
 
@@ -133,7 +136,7 @@ async def delete_book(
 
 
 @router.post("/{book_id}/search", response_model=list[ProwlarrRelease])
-async def search_book_releases(
+async def search_book_releases_legacy(
     book_id: uuid.UUID,
     svc: Annotated[BookService, Depends(_book_service)],
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -145,6 +148,32 @@ async def search_book_releases(
         raise HTTPException(status_code=502, detail="Prowlarr authentication failed")
     except ProwlarrTimeoutError:
         raise HTTPException(status_code=503, detail="Prowlarr unreachable")
+    except ProwlarrServerError as exc:
+        raise HTTPException(status_code=502, detail=f"Prowlarr error: {str(exc)[:100]}")
+    except ProwlarrRateLimitError as exc:
+        raise HTTPException(
+            status_code=429,
+            detail="Prowlarr rate limited",
+            headers={"Retry-After": str(exc.retry_after or 60)},
+        )
+
+
+@router.post("/{book_id}/release-search", response_model=ReleaseSearchResponse)
+async def search_book_releases(
+    book_id: uuid.UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> ReleaseSearchResponse:
+    try:
+        return await release_search_service.search_releases(db, book_id)
+    except ProwlarrNotConfiguredError:
+        raise HTTPException(
+            status_code=412,
+            detail="Prowlarr is not configured. Configure it in integration settings.",
+        )
+    except ProwlarrAuthError:
+        raise HTTPException(status_code=502, detail="Prowlarr authentication failed")
+    except ProwlarrTimeoutError:
+        raise HTTPException(status_code=504, detail="Prowlarr request timed out")
     except ProwlarrServerError as exc:
         raise HTTPException(status_code=502, detail=f"Prowlarr error: {str(exc)[:100]}")
     except ProwlarrRateLimitError as exc:
