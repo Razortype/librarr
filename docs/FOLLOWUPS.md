@@ -31,6 +31,7 @@ Intentional technical debts and deferred work. Each item must be resolved before
 ## API design
 
 - **API path naming review pre-1.0** — `GET /api/v1/author/{id}/book` uses singular sub-resource naming (matching *arr convention) while the top-level collection is `/api/v1/book` (also singular). The inconsistency is minor but worth a sweep of all sub-resource paths before the 1.0 public API freeze to confirm they follow the same convention throughout.
+- **Remove settings-based `POST /api/v1/book/{book_id}/search`** (`app/api/v1/book.py`, `app/services/book_service.py:search_releases`) — this endpoint uses `settings.prowlarr_url`/`settings.prowlarr_api_key` env vars instead of the DB-persisted `IntegrationConfig`. It predates the `IntegrationConfig` store. Remove before the frontend wires up the new `POST /api/v1/book/{book_id}/release-search` endpoint, which is the correct replacement.
 
 ## Testing
 

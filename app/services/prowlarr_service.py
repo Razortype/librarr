@@ -12,6 +12,7 @@ from app.core.crypto import decrypt_config, encrypt_config
 from app.integrations.exceptions import (
     ProwlarrAuthError,
     ProwlarrError,
+    ProwlarrNotConfiguredError,
     ProwlarrTimeoutError,
 )
 from app.integrations.prowlarr.client import ProwlarrClient
@@ -64,6 +65,23 @@ def _row_to_out(row: object, cfg: dict[str, Any]) -> ProwlarrConfigOut:
         created_at=row.created_at,
         updated_at=row.updated_at,
     )
+
+
+@contextlib.asynccontextmanager
+async def get_active_client(session: AsyncSession) -> AsyncGenerator[ProwlarrClient]:
+    """Yield a ProwlarrClient built from the persisted DB config.
+
+    Raises ProwlarrNotConfiguredError if no enabled config exists.
+    Credential resolution diverges from test_connection here; httpx construction
+    is identical — both delegate to _build_client.
+    """
+    repo = IntegrationConfigRepository(session)
+    row = await repo.get_by_type(_TYPE)
+    if row is None or not row.enabled:
+        raise ProwlarrNotConfiguredError("Prowlarr is not configured or is disabled")
+    cfg = decrypt_config(row.config)
+    async with _build_client(cfg["base_url"], cfg["api_key"]) as client:
+        yield client
 
 
 async def get_config(session: AsyncSession) -> ProwlarrConfigOut | None:
