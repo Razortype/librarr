@@ -97,6 +97,10 @@ class ProwlarrTimeoutError(ProwlarrError):
     """Timeout connecting to or reading from Prowlarr."""
 
 
+class ProwlarrNotConfiguredError(ProwlarrError):
+    """Prowlarr is not configured or has been disabled."""
+
+
 class QBittorrentError(IntegrationError):
     """Base for qBittorrent errors."""
 
