@@ -10,10 +10,14 @@ from app.core.db import get_db
 from app.core.deps import get_metadata_service, get_prowlarr_client
 from app.integrations.exceptions import (
     ProwlarrAuthError,
+    ProwlarrDownloadError,
     ProwlarrNotConfiguredError,
     ProwlarrRateLimitError,
     ProwlarrServerError,
     ProwlarrTimeoutError,
+    QBittorrentAddError,
+    QBittorrentHashLookupError,
+    QBittorrentNotConfiguredError,
 )
 from app.integrations.prowlarr.client import ProwlarrClient
 from app.schemas.book import (
@@ -27,9 +31,10 @@ from app.schemas.book import (
     BookSearchResult,
 )
 from app.schemas.common import PaginatedResponse
+from app.schemas.grab import GrabRequest, GrabResponse
 from app.schemas.prowlarr import ProwlarrRelease
 from app.schemas.release import ReleaseSearchResponse
-from app.services import release_search_service
+from app.services import grab_service, release_search_service
 from app.services.book_service import BookService
 from app.services.metadata import MetadataService
 
@@ -156,6 +161,27 @@ async def search_book_releases_legacy(
             detail="Prowlarr rate limited",
             headers={"Retry-After": str(exc.retry_after or 60)},
         )
+
+
+@router.post("/{book_id}/grab", response_model=GrabResponse)
+async def grab_release(
+    book_id: uuid.UUID,
+    request: GrabRequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> GrabResponse:
+    try:
+        result = await grab_service.grab(db, book_id, request)
+    except ProwlarrNotConfiguredError:
+        raise HTTPException(status_code=412, detail="Prowlarr is not configured")
+    except QBittorrentNotConfiguredError:
+        raise HTTPException(status_code=412, detail="qBittorrent is not configured")
+    except ProwlarrDownloadError as exc:
+        raise HTTPException(status_code=502, detail=f"Prowlarr download error: {str(exc)[:100]}")
+    except QBittorrentAddError as exc:
+        raise HTTPException(status_code=502, detail=f"qBittorrent error: {str(exc)[:100]}")
+    except QBittorrentHashLookupError:
+        raise HTTPException(status_code=504, detail="qBittorrent hash lookup timed out")
+    return GrabResponse.model_validate(result)
 
 
 @router.post("/{book_id}/release-search", response_model=ReleaseSearchResponse)
